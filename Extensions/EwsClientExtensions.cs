@@ -52,6 +52,16 @@ namespace EWS
         }
 
         /// <summary>
+        /// adds a listener that receives no object and just invokes the specified action when an event is received.
+        /// </summary>
+        public static IEwsEventListener AddEmptyListener(this EwsClient client, byte eventId, Action received)
+        {
+            EmptyListener listener = new(received);
+            client.AddListener(eventId, listener);
+            return listener;
+        }
+
+        /// <summary>
         /// adds a listener that receives a string from the server, with utf8 encoding.
         /// </summary>
         public static IEwsEventListener AddStringListener(this EwsClient client, byte eventId,
@@ -65,7 +75,7 @@ namespace EWS
         /// <summary>
         /// adds a listener that receives a json for the specified type <typeparamref name="T"/> from the server.
         /// </summary>
-        public static IEwsEventListener AddJsonListener<T>(this EwsClient client, byte eventId, 
+        public static IEwsEventListener AddJsonListener<T>(this EwsClient client, byte eventId,
             IEwsJsonSerializer<T> serializer, Action<T> received, Action<SerializationException> error = null)
         {
             JsonListener<T> listener = new(serializer, received, error);
