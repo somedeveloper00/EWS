@@ -145,7 +145,14 @@ public class EwsServer
             ewsClient.Connected += () => ServerClosed += RemoveClient;
 
 
-            NewClientConnected?.Invoke(ewsClient);
+            try
+            {
+                NewClientConnected?.Invoke(ewsClient);
+            }
+            catch (Exception ex)
+            {
+                LogError?.Exception(ex);
+            }
 
             void RemoveClient()
             {
