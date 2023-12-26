@@ -65,6 +65,12 @@ namespace EWS
         public IEwsStreamManip streamManip;
 
         /// <summary>
+        /// preprocessor for when receiving new events. if its null, the listener will be executed right away, otherwise, the 
+        /// execution of listener is at this class's responsibility.
+        /// </summary>
+        public IListenerPreprocess listenerPreprocess;
+
+        /// <summary>
         /// uses the given client to create a new EwsClient.
         /// </summary>
         internal EwsClient(TcpClient client, int bufferSize = 1024)
@@ -302,7 +308,14 @@ namespace EWS
         {
             try
             {
-                listener.Process(this, message);
+                if (listenerPreprocess is not null)
+                {
+                    listenerPreprocess.ExecuteNewEvent(this, message, listener);
+                }
+                else
+                {
+                    listener.Process(this, message);
+                }
             }
             catch (Exception ex)
             {

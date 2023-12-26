@@ -29,7 +29,10 @@ namespace EWS.Listeners
             }
             catch (Exception ex)
             {
-                onSerializationError?.Invoke(ex);
+                if (onSerializationError is not null)
+                    onSerializationError(ex);
+                else 
+                    throw ex;
             }
         }
     }
