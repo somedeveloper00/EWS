@@ -39,6 +39,14 @@ namespace EWS
         }
 
         /// <summary>
+        /// sends an empty message to the server.
+        /// </summary>
+        public static void SendEmpty(this EwsClient client, byte eventId)
+        {
+            client.Send(eventId, Array.Empty<byte>());
+        }
+
+        /// <summary>
         /// adds a listener that receives an object of the specified type <typeparamref name="T"/> from 
         /// the server. (using byte array marshalling, so the object must be unmanaged) 
         /// </summary>
