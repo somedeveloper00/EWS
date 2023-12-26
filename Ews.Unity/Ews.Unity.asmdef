@@ -1,0 +1,16 @@
+{
+    "name": "Ews.Unity",
+    "rootNamespace": "",
+    "references": [
+        "GUID:74b17e02f6752c449ade7efb83b7e56e"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}
