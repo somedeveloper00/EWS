@@ -274,8 +274,7 @@ namespace EWS
         private void HandleMessage(List<byte> data)
         {
             byte eventId = data[0];
-            var message = data.Skip(1).Take(data.Count - 1).ToArray();
-
+            var message = data.Count <= 2 ? Array.Empty<byte>() : data.Skip(1).Take(data.Count - 1).ToArray();
             if (encryption is not null)
             {
                 encryption.Decrypt(this, ref message, out var errorMessage);

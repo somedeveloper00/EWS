@@ -15,14 +15,12 @@ namespace EWS.Unity
         public void ExecuteNewEvent(EwsClient client, byte[] message, IEwsEventListener listener)
         {
             _queue.Enqueue(() => listener.Process(client, message));
-            Debug.Log("new queue");
         }
 
         private void Update()
         {
             while (_queue.TryDequeue(out var action))
             {
-                Debug.Log("dequeued");
                 action?.Invoke();
             }
         }
