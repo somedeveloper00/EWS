@@ -1,3 +1,7 @@
+using System;
+using System.Threading;
+using System.Threading.Tasks;
+
 public static class EwsUtilities
 {
     /// <summary>
@@ -8,21 +12,21 @@ public static class EwsUtilities
     /// <summary>
     /// byte sequence sent from server to client, indicating the secret was accepted.
     /// </summary>
-    public static byte[] SecretAccepted = new byte[] { 1 };
+    public static byte[] SecretAccepted = new byte[] { 0x0, 0x0, 0x0, 0x0 };
 
     /// <summary>
     /// Compares two arrays.
     /// </summary>
     /// <param name="startIndex">(inclusive) The index to start comparing from.</param>
     /// <param name="endIndex">(inclusive) The index to stop comparing at.</param>
-    public static bool SequenceEqual<T>(this T[] self, T[] other, int startIndex, int endIndex)
+    public static bool SequenceEqual<T>(this T[] self, T[] other)
     {
         if (self.Length != other.Length)
         {
             return false;
         }
 
-        for (int i = startIndex; i <= endIndex; i++)
+        for (int i = 0; i < self.Length; i++)
         {
             if (!self[i].Equals(other[i]))
             {
@@ -31,5 +35,30 @@ public static class EwsUtilities
         }
 
         return true;
+    }
+
+    public static Task WithToken(this Task task, CancellationToken ct)
+    {
+        var tcs = new TaskCompletionSource<bool>();
+        ct.Register(() =>
+        {
+            tcs.TrySetCanceled();
+        });
+        task.ContinueWith(t =>
+        {
+            if (t.IsCanceled)
+            {
+                tcs.TrySetCanceled();
+            }
+            else if (t.IsFaulted)
+            {
+                tcs.TrySetException(t.Exception);
+            }
+            else
+            {
+                tcs.TrySetResult(true);
+            }
+        });
+        return tcs.Task;
     }
 }

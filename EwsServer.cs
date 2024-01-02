@@ -49,12 +49,12 @@ public class EwsServer
     public event NewClientConnectedDelegate NewClientConnected;
 
     /// <summary>
-    /// Raised when the server starts. (not just the first time)
+    /// Raised when the server starts listening.
     /// </summary>
-    public event EmptyDelegate ServerConnected;
+    public event EmptyDelegate ServerStartedListening;
 
     /// <summary>
-    /// Raised when the server closes. (not just the first time)
+    /// Raised when the server closes.
     /// </summary>
     public event EmptyDelegate ServerClosed;
 
@@ -77,13 +77,18 @@ public class EwsServer
     /// <summary>
     /// Returns true if the server is running.
     /// </summary>
-    public bool IsRunning() => _cts?.IsCancellationRequested == false && _socket?.Connected == true;
+    public bool IsListening() => _cts?.IsCancellationRequested == false && _socket?.IsBound == true;
 
     /// <summary>
-    /// Starts listening for clients. Check <see cref="ServerConnected"/> for the result;
+    /// Starts listening for clients. Check <see cref="ServerStartedListening"/> for the result;
     /// </summary>
     public void Listen()
     {
+        if (IsListening())
+        {
+            return;
+        }
+
         try
         {
             _socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, protocol);
@@ -97,13 +102,15 @@ public class EwsServer
             _socket.Listen(10);
             try
             {
-                ServerConnected?.Invoke();
+                ServerStartedListening?.Invoke();
             }
             catch (Exception ex)
             {
                 LogError?.Exception(ex);
             }
-            StartCommunicationLoop();
+            _cts?.Cancel();
+            _cts = new();
+            StartCommunicationLoop(_cts.Token);
         }
         catch (Exception ex)
         {
@@ -114,11 +121,11 @@ public class EwsServer
 
     public void Stop()
     {
-        if (IsRunning())
+        if (!IsListening())
         {
-            StopCommunicationLoop();
-            _socket.Dispose();
+            return;
         }
+        StopCommunicationLoop();
     }
 
     /// <summary>
@@ -127,37 +134,18 @@ public class EwsServer
     private async Task ReconnectAsync()
     {
         StopCommunicationLoop();
-        _socket.Dispose();
         await Task.Delay(reconnectInterval);
-        try
-        {
-            await _socket.ConnectAsync(_socket.RemoteEndPoint);
-            try
-            {
-                ServerConnected?.Invoke();
-            }
-            catch (Exception ex)
-            {
-                LogError?.Exception(ex);
-            }
-            StartCommunicationLoop();
-        }
-        catch (Exception ex)
-        {
-            LogError?.Invoke($"could not connect to {endpoint}. {ex.Message}");
-            await ReconnectAsync();
-        }
+        Listen();
     }
 
     /// <summary>
     /// Starts the socket communication loop.
     /// </summary>
-    private void StartCommunicationLoop()
+    private void StartCommunicationLoop(CancellationToken ct)
     {
-        _cts = new CancellationTokenSource();
         Task.Run(async () =>
         {
-            while (!_cts.IsCancellationRequested)
+            while (!ct.IsCancellationRequested)
             {
                 try
                 {
@@ -169,25 +157,27 @@ public class EwsServer
                         // check if client is an EWS client
                         var stream = new NetworkStream(client);
                         var buffer = new byte[EwsUtilities.EwsSecret.Length];
-                        int c = await stream.ReadAsync(buffer, _cts.Token);
-                        if (c == EwsUtilities.EwsSecret.Length && buffer.SequenceEqual(EwsUtilities.EwsSecret, 0, c))
+                        int c = await stream.ReadAsync(buffer, ct);
+                        if (buffer.SequenceEqual(EwsUtilities.EwsSecret))
                         {
                             // accept
-                            await client.SendAsync(EwsUtilities.EwsSecret, SocketFlags.None);
+                            await client.SendAsync(EwsUtilities.SecretAccepted, SocketFlags.None);
 
                             // connect
-                            var ewsClient = new EwsClient(client);
+                            var ewsClient = new EwsClient(client, keepAlive);
 
                             // keeping track of connected clients
                             ServerClosed += RemoveClient;
                             ewsClient.Disconnected += () => ServerClosed -= RemoveClient;
                             ewsClient.Connected += () => ServerClosed += RemoveClient;
 
+                            NewClientConnected?.Invoke(ewsClient);
+
                             void RemoveClient()
                             {
                                 try
                                 {
-                                    ewsClient.Close();
+                                    ewsClient.Disconnect();
                                 }
                                 catch (Exception ex)
                                 {
@@ -205,10 +195,15 @@ public class EwsServer
                 }
                 catch (Exception ex)
                 {
+                    if (_cts.IsCancellationRequested)
+                    {
+                        break;
+                    }
                     LogError?.Exception(ex);
                     await ReconnectAsync();
                 }
             }
+            _socket.Dispose();
             ServerClosed?.Invoke();
         });
     }
@@ -220,5 +215,11 @@ public class EwsServer
     private void StopCommunicationLoop()
     {
         _cts?.Cancel();
+        if (_socket?.Connected == true)
+        {
+            // necessary to stop the socket from listening
+            _socket.Shutdown(SocketShutdown.Both);
+        }
+        _socket?.Close();
     }
 }

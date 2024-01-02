@@ -6,6 +6,7 @@ using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
 using EWS.Interfaces;
+using UnityEngine;
 
 namespace EWS
 {
@@ -22,7 +23,9 @@ namespace EWS
         /// <summary>
         /// The timeout for connecting to the server.
         /// </summary>
-        public TimeSpan connectTimeout = TimeSpan.FromSeconds(5);
+        public TimeSpan connectTimeout = TimeSpan.FromSeconds(2);
+
+        public TimeSpan keepAliveIntervals = TimeSpan.FromSeconds(2);
 
         /// <summary>
         /// The byte that marks the end of a message.
@@ -55,6 +58,11 @@ namespace EWS
         private readonly ProtocolType _protocol;
 
         /// <summary>
+        /// maximum number of tries to connect to the server.
+        /// </summary>
+        private readonly int _maxConnectRetries;
+
+        /// <summary>
         /// Raised when an error occurs.
         /// </summary>
         public event LogErrorDelegate LogError;
@@ -68,6 +76,11 @@ namespace EWS
         /// Raised when the client is disconnected.
         /// </summary>
         public event EmptyDelegate Disconnected;
+
+        /// <summary>
+        /// Raised when attampting a reconnect
+        /// </summary>
+        public event EmptyDelegate ReconnectAttempted;
 
         /// <summary>
         /// The encryption algorithm used for sending and receiving data. (null for no encryptionإ)
@@ -87,131 +100,58 @@ namespace EWS
         /// </summary>
         public IListenerPreprocess listenerPreprocess;
 
-        private CancellationTokenSource _cts;
+        private CancellationTokenSource _clientLoopCts;
+        private CancellationTokenSource _connectCts;
 
         private readonly bool _keepAlive;
 
         /// <summary>
         /// uses the given client to create a new EwsClient.
         /// </summary>
-        internal EwsClient(Socket socket, int bufferSize = 1024)
+        internal EwsClient(Socket socket, bool keepAlive, int bufferSize = 1024, int maxConnectRetries = 0)
         {
             _socket = socket;
             _bufferSize = bufferSize;
             _endpoint = socket.RemoteEndPoint;
             _protocol = socket.ProtocolType;
-            _keepAlive = (bool)socket.GetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive);
+            _keepAlive = keepAlive;
+            _maxConnectRetries = maxConnectRetries;
+            _clientLoopCts = new();
+            StartCommunicationLoop(_clientLoopCts.Token);
         }
 
         /// <summary>
         /// Creates a new EwsClient.
         /// </summary>
         public EwsClient(string host, int port, ProtocolType protocol = ProtocolType.Tcp,
-            int bufferSize = 1024,
-            bool keepAlive = true)
+            int bufferSize = 1024, bool keepAlive = true, int maxConnectRetries = 5)
         {
             _bufferSize = bufferSize;
             _protocol = protocol;
             _keepAlive = keepAlive;
             _endpoint = new IPEndPoint(IPAddress.Parse(host), port);
+            _maxConnectRetries = maxConnectRetries;
         }
 
         /// <summary>
         /// Connects to the given host and port. Use events <see cref="Connected"/> and <see cref="Disconnected"/> 
         /// to listen for the result. When <see cref="IsConnected"/> is true, you don't need to use this.
         /// </summary>
-        public async Task ConnectAsync()
+        public async Task<bool> ConnectAsync()
         {
-            if (IsConnected())
-            {
-                LogError?.Invoke("client already connected");
-                return;
-            }
-
-            try
-            {
-                // make cancellation token temporarily serve for connection
-                _cts?.Cancel();
-                _cts = new();
-                _cts.CancelAfter(connectTimeout);
-
-                // connect
-                _socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, _protocol);
-                if (_keepAlive)
-                {
-                    _socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, true);
-                }
-                await _socket.ConnectAsync(_endpoint);
-
-
-                if (_cts.IsCancellationRequested)
-                {
-                    Close();
-                    return;
-                }
-
-                // send EWS secret
-                await _socket.SendAsync(EwsUtilities.EwsSecret, SocketFlags.None, _cts.Token);
-                if (_cts.IsCancellationRequested)
-                {
-                    Close();
-                    return;
-                }
-
-                // listen for server's acceptance
-                var buffers = new byte[EwsUtilities.SecretAccepted.Length];
-                var c = await _socket.ReceiveAsync(buffers, SocketFlags.None);
-
-                if (_cts.IsCancellationRequested)
-                {
-                    Close();
-                    return;
-                }
-
-                if (c == EwsUtilities.SecretAccepted.Length &&
-                    buffers.SequenceEqual(EwsUtilities.SecretAccepted, 0, c - 1))
-                {
-                    // server has accepted connection
-                    Connected?.Invoke();
-                    StartCommunicationLoop();
-                }
-                else
-                {
-                    // server has refused connection
-                    Close();
-                    return;
-                }
-
-            }
-            catch (Exception ex)
-            {
-                LogError?.Exception(ex);
-
-                // retry
-                if (reconnectInterval.Ticks > 0)
-                {
-                    await ReconnectAsync();
-                }
-            }
-
-            void Close()
-            {
-                _socket.Close();
-                _socket.Dispose();
-            }
+            _connectCts?.Cancel();
+            _connectCts = new();
+            await InternalConnectAsync(_maxConnectRetries);
+            return IsConnected();
         }
 
         /// <summary>
         /// Closes the connection. Use event <see cref="Disconnected"/> to listen for the result. When 
         /// <see cref="IsConnected"/> is false, you don't need to use this.
         /// </summary>
-        public void Close()
+        public void Disconnect()
         {
-            if (IsConnected())
-            {
-                _cts.Cancel();
-                _socket.Dispose();
-            }
+            StopCommunicationLoop();
         }
 
         /// <summary>
@@ -219,7 +159,7 @@ namespace EWS
         /// </summary>
         public bool IsConnected()
         {
-            return _cts?.IsCancellationRequested == false && _socket?.Connected == true;
+            return _clientLoopCts?.IsCancellationRequested == false && _socket?.Connected == true;
         }
 
         /// <summary>
@@ -287,53 +227,133 @@ namespace EWS
             // hook
             streamManip?.OnSend(data.ToArray());
 
-            _socket.SendAsync(data.ToArray(), SocketFlags.None, _cts.Token);
+            _socket.SendAsync(data.ToArray(), SocketFlags.None, _clientLoopCts.Token);
+        }
+
+        /// <summary>
+        /// Connects to the given host and port. Use events <see cref="Connected"/> and <see cref="Disconnected"/>
+        /// </summary>
+        private async Task InternalConnectAsync(int remainingRetries)
+        {
+            if (IsConnected())
+            {
+                return;
+            }
+
+            _clientLoopCts?.Cancel();
+            var timeoutCts = new CancellationTokenSource();
+
+            try
+            {
+                // connect
+                _socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, _protocol);
+                if (_keepAlive)
+                {
+                    _socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, true);
+                }
+                timeoutCts = new();
+                timeoutCts.CancelAfter(connectTimeout);
+                await _socket.ConnectAsync(_endpoint).WithToken(timeoutCts.Token).WithToken(_connectCts.Token);
+
+                // send EWS secret
+                await _socket.SendAsync(EwsUtilities.EwsSecret, SocketFlags.None, _connectCts.Token);
+
+                // listen for server's acceptance
+                var buffers = new byte[EwsUtilities.SecretAccepted.Length];
+                var c = await _socket.ReceiveAsync(buffers, SocketFlags.None, _connectCts.Token);
+
+                if (buffers.SequenceEqual(EwsUtilities.SecretAccepted))
+                {
+                    // server has accepted connection
+                    Connected?.Invoke();
+
+                    // start loop
+                    _clientLoopCts?.Cancel();
+                    _clientLoopCts = new();
+                    StartCommunicationLoop(_clientLoopCts.Token);
+                }
+                else
+                {
+                    LogError?.Invoke("server refused EWS connection");
+                    // server has refused connection
+                    Close();
+                    return;
+                }
+            }
+            catch (Exception ex)
+            {
+                Close();
+
+                if (_connectCts.IsCancellationRequested)
+                {
+                    return;
+                }
+
+                // log unexpected error
+                if (!timeoutCts.IsCancellationRequested)
+                {
+                    LogError?.Exception(ex);
+                }
+
+                // retry
+                bool reconnectIntervalIsMoreThanZero = reconnectInterval > TimeSpan.Zero;
+                if (reconnectIntervalIsMoreThanZero && remainingRetries > 0)
+                {
+                    await ReconnectAsync(--remainingRetries);
+                }
+            }
+
+            void Close()
+            {
+                _socket?.Close();
+                _socket?.Dispose();
+            }
         }
 
         /// <summary>
         /// Sends the given message to the server. Use <see cref="IsConnected"/> to check if the
         /// </summary>
-        private async Task ReconnectAsync()
+        private async Task ReconnectAsync(int remainingRetries)
         {
-            _cts?.Cancel();
-            _socket.Dispose();
-            await Task.Delay(reconnectInterval);
-            await ConnectAsync();
+            ReconnectAttempted?.Invoke();
+            StopCommunicationLoop();
+
+            _connectCts = new();
+            await Task.Delay(reconnectInterval, _connectCts.Token);
+            await InternalConnectAsync(remainingRetries);
+        }
+
+        /// <summary>
+        /// cancels thread which started from <see cref="StartCommunicationLoop"/> and closes <see cref="_socket"/>
+        /// </summary>
+        private void StopCommunicationLoop()
+        {
+            _connectCts?.Cancel();
+            _clientLoopCts?.Cancel();
         }
 
         /// <summary>
         /// Stops the socket communication loop.
         /// </summary>
-        private void StartCommunicationLoop()
+        private void StartCommunicationLoop(CancellationToken ct)
         {
-            _cts?.Cancel();
-            _cts = new CancellationTokenSource();
-
-            Task.Run(async () =>
+            var mainLoopThread = new Thread(() =>
             {
                 var buffer = new byte[_bufferSize];
                 var data = new List<byte>(_bufferSize);
 
                 // listen for messages
-                while (!_cts.IsCancellationRequested)
+                while (true)
                 {
                     try
                     {
-                        var c = await _socket.ReceiveAsync(buffer, SocketFlags.None, _cts.Token);
+                        var c = _socket.Receive(buffer, SocketFlags.None, out var errorCode);
 
-                        // if server has disconnected, c is 0
+                        // 0 length data happens when the connection is lost
                         if (c == 0)
                         {
-                            await ReconnectAsync();
-                            return;
-                        }
-
-                        if (_cts.IsCancellationRequested)
-                        {
-                            _socket.Close();
-                            _socket.Dispose();
-                            Disconnected?.Invoke();
-                            return;
+                            Task.Run(() => ReconnectAsync(_maxConnectRetries));
+                            break;
                         }
 
                         // hook
@@ -351,12 +371,56 @@ namespace EWS
                             data.Clear();
                         }
                     }
+                    catch (ThreadAbortException e)
+                    {
+                        Disconnected?.Invoke();
+                        _socket?.Dispose();
+                        break;
+                    }
                     catch (Exception ex)
                     {
-                        LogError?.Invoke("{0}\n{1}", ex.Message, ex.StackTrace);
+                        LogError?.Exception(ex);
                     }
                 }
             });
+
+            var keepAliveThread = new Thread(() =>
+            {
+                while (true)
+                {
+                    Thread.Sleep(keepAliveIntervals);
+                    if (!IsConnected())
+                    {
+                        break;
+                    }
+                    try
+                    {
+                        int c = _socket.Send(new byte[] { 0x00 }, SocketFlags.None, out var errorCode);
+                        if (c == 0) // its disconnected
+                        {
+                            throw new Exception();
+                        }
+                    }
+                    catch (ThreadAbortException)
+                    {
+                        // safe to ignore
+                    }
+                    catch (Exception ex)
+                    {
+                        // connection is lost. try to reconnect
+                        StopCommunicationLoop();
+                        ReconnectAsync(_maxConnectRetries).ConfigureAwait(false);
+                    }
+                }
+            });
+
+            ct.Register(() =>
+            {
+                mainLoopThread?.Abort();
+                keepAliveThread?.Abort();
+            });
+            mainLoopThread.Start();
+            // keepAliveThread.Start();
         }
 
         /// <summary>

@@ -25,13 +25,13 @@ namespace EWS.Unity
         [ContextMenu(nameof(StartServer))]
         public void StartServer()
         {
-            if (server?.IsRunning() ?? false)
+            if (server?.IsListening() ?? false)
             {
                 server.Stop();
             }
             server = new(ipAddress, port);
             server.ServerClosed += () => Debug.Log("server closed!");
-            server.ServerConnected += () => Debug.Log("server started!");
+            server.ServerStartedListening += () => Debug.Log("server started!");
             server.LogError += LogError;
             server.NewClientConnected += NewClientConnected;
             server.Listen();

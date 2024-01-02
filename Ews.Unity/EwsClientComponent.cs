@@ -54,7 +54,7 @@ namespace EWS.Unity
         [ContextMenu(nameof(Close))]
         private void Close()
         {
-            _client?.Close();
+            _client?.Disconnect();
         }
 
         private void LogError(string msg, object[] args)
