@@ -101,6 +101,7 @@ namespace EWS
         public IListenerPreprocess listenerPreprocess;
 
         private CancellationTokenSource _clientLoopCts;
+        
         private CancellationTokenSource _connectCts;
 
         private readonly bool _keepAlive;
