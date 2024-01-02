@@ -1,8 +1,10 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Net.Sockets;
 using System.Threading;
+using System.Threading.Tasks;
 using EWS.Interfaces;
 
 namespace EWS
@@ -13,14 +15,24 @@ namespace EWS
     public class EwsClient
     {
         /// <summary>
-        /// The underlying TCP client.
+        /// The interval between reconnect attempts.
         /// </summary>
-        private TcpClient _client;
+        public TimeSpan reconnectInterval = TimeSpan.FromSeconds(2);
 
         /// <summary>
-        /// The thread that runs the client loop.
+        /// The timeout for connecting to the server.
         /// </summary>
-        private Thread _thread;
+        public TimeSpan connectTimeout = TimeSpan.FromSeconds(5);
+
+        /// <summary>
+        /// The byte that marks the end of a message.
+        /// </summary>
+        private const byte EndOfMessageByte = 0x00;
+
+        /// <summary>
+        /// The underlying Socke<see cref="Socket"/>.
+        /// </summary>
+        private Socket _socket;
 
         /// <summary>
         /// The size of the buffer used to read data from the stream.
@@ -33,9 +45,14 @@ namespace EWS
         private readonly List<IEwsEventListener>[] _listeners = new List<IEwsEventListener>[byte.MaxValue];
 
         /// <summary>
-        /// The byte that marks the end of a message.
+        /// The endpoint that the client connects to.
         /// </summary>
-        private const byte EndOfMessageByte = 0x00;
+        private readonly EndPoint _endpoint;
+
+        /// <summary>
+        /// The protocol that the client uses.
+        /// </summary>
+        private readonly ProtocolType _protocol;
 
         /// <summary>
         /// Raised when an error occurs.
@@ -70,38 +87,118 @@ namespace EWS
         /// </summary>
         public IListenerPreprocess listenerPreprocess;
 
+        private CancellationTokenSource _cts;
+
+        private readonly bool _keepAlive;
+
         /// <summary>
         /// uses the given client to create a new EwsClient.
         /// </summary>
-        internal EwsClient(TcpClient client, int bufferSize = 1024)
+        internal EwsClient(Socket socket, int bufferSize = 1024)
         {
-            _client = client;
+            _socket = socket;
             _bufferSize = bufferSize;
-            _thread = new Thread(ClientLoop);
-            _thread.Start();
+            _endpoint = socket.RemoteEndPoint;
+            _protocol = socket.ProtocolType;
+            _keepAlive = (bool)socket.GetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive);
         }
 
         /// <summary>
         /// Creates a new EwsClient.
         /// </summary>
-        public EwsClient(int bufferSize = 1024)
+        public EwsClient(string host, int port, ProtocolType protocol = ProtocolType.Tcp,
+            int bufferSize = 1024,
+            bool keepAlive = true)
         {
             _bufferSize = bufferSize;
+            _protocol = protocol;
+            _keepAlive = keepAlive;
+            _endpoint = new IPEndPoint(IPAddress.Parse(host), port);
         }
 
         /// <summary>
         /// Connects to the given host and port. Use events <see cref="Connected"/> and <see cref="Disconnected"/> 
         /// to listen for the result. When <see cref="IsConnected"/> is true, you don't need to use this.
         /// </summary>
-        public void Connect(string hostName, int port)
+        public async Task ConnectAsync()
         {
             if (IsConnected())
             {
                 LogError?.Invoke("client already connected");
                 return;
             }
-            _thread = new Thread(() => ConnectAndClientLoop(hostName, port));
-            _thread.Start();
+
+            try
+            {
+                // make cancellation token temporarily serve for connection
+                _cts?.Cancel();
+                _cts = new();
+                _cts.CancelAfter(connectTimeout);
+
+                // connect
+                _socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, _protocol);
+                if (_keepAlive)
+                {
+                    _socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, true);
+                }
+                await _socket.ConnectAsync(_endpoint);
+
+
+                if (_cts.IsCancellationRequested)
+                {
+                    Close();
+                    return;
+                }
+
+                // send EWS secret
+                await _socket.SendAsync(EwsUtilities.EwsSecret, SocketFlags.None, _cts.Token);
+                if (_cts.IsCancellationRequested)
+                {
+                    Close();
+                    return;
+                }
+
+                // listen for server's acceptance
+                var buffers = new byte[EwsUtilities.SecretAccepted.Length];
+                var c = await _socket.ReceiveAsync(buffers, SocketFlags.None);
+
+                if (_cts.IsCancellationRequested)
+                {
+                    Close();
+                    return;
+                }
+
+                if (c == EwsUtilities.SecretAccepted.Length &&
+                    buffers.SequenceEqual(EwsUtilities.SecretAccepted, 0, c - 1))
+                {
+                    // server has accepted connection
+                    Connected?.Invoke();
+                    StartCommunicationLoop();
+                }
+                else
+                {
+                    // server has refused connection
+                    Close();
+                    return;
+                }
+
+            }
+            catch (Exception ex)
+            {
+                LogError?.Exception(ex);
+
+                // retry
+                if (reconnectInterval.Ticks > 0)
+                {
+                    await ReconnectAsync();
+                }
+            }
+
+            void Close()
+            {
+                _socket.Close();
+                _socket.Dispose();
+            }
         }
 
         /// <summary>
@@ -110,12 +207,11 @@ namespace EWS
         /// </summary>
         public void Close()
         {
-            if (!IsConnected())
+            if (IsConnected())
             {
-                LogError?.Invoke("client is not connected");
-                return;
+                _cts.Cancel();
+                _socket.Dispose();
             }
-            _thread?.Abort();
         }
 
         /// <summary>
@@ -123,7 +219,7 @@ namespace EWS
         /// </summary>
         public bool IsConnected()
         {
-            return _thread is not null && _thread.IsAlive && _client.Connected;
+            return _cts?.IsCancellationRequested == false && _socket?.Connected == true;
         }
 
         /// <summary>
@@ -170,6 +266,7 @@ namespace EWS
                 return;
             }
 
+            // hook
             if (encryption is not null)
             {
                 encryption.Encrypt(this, ref message, out var errorMessage);
@@ -190,82 +287,76 @@ namespace EWS
             // hook
             streamManip?.OnSend(data.ToArray());
 
-            _client.GetStream().WriteAsync(data.ToArray(), 0, data.Count);
+            _socket.SendAsync(data.ToArray(), SocketFlags.None, _cts.Token);
         }
 
         /// <summary>
-        /// Blocks the thread, connecting the client and running the <see cref="ClientLoop"/> on this thread. 
-        /// (Should NOT be called from the main thread)
+        /// Sends the given message to the server. Use <see cref="IsConnected"/> to check if the
         /// </summary>
-        private void ConnectAndClientLoop(string uri, int port)
+        private async Task ReconnectAsync()
         {
-            _client = new TcpClient();
-            try
-            {
-                _client.Connect(uri, port);
-                _client.GetStream().Write(EwsUtilities.EwsSecret);
-            }
-            catch (Exception ex)
-            {
-                LogError?.Exception(ex);
-                return;
-            }
-            Connected?.Invoke();
-            ClientLoop();
+            _cts?.Cancel();
+            _socket.Dispose();
+            await Task.Delay(reconnectInterval);
+            await ConnectAsync();
         }
 
         /// <summary>
-        /// Runs the client loop. (Should NOT be called from the main thread)
+        /// Stops the socket communication loop.
         /// </summary>
-        private void ClientLoop()
+        private void StartCommunicationLoop()
         {
-            try
-            {
-                Span<byte> buffer = stackalloc byte[_bufferSize];
-                List<byte> data = new(2048);
-                var stream = _client.GetStream();
+            _cts?.Cancel();
+            _cts = new CancellationTokenSource();
 
-                while (true)
+            Task.Run(async () =>
+            {
+                var buffer = new byte[_bufferSize];
+                var data = new List<byte>(_bufferSize);
+
+                // listen for messages
+                while (!_cts.IsCancellationRequested)
                 {
-                    if (!_client.Connected)
+                    try
                     {
-                        return;
+                        var c = await _socket.ReceiveAsync(buffer, SocketFlags.None, _cts.Token);
+
+                        // if server has disconnected, c is 0
+                        if (c == 0)
+                        {
+                            await ReconnectAsync();
+                            return;
+                        }
+
+                        if (_cts.IsCancellationRequested)
+                        {
+                            _socket.Close();
+                            _socket.Dispose();
+                            Disconnected?.Invoke();
+                            return;
+                        }
+
+                        // hook
+                        streamManip?.OnRead(buffer, c);
+
+                        // handle message
+                        for (int i = 0; i < c; i++)
+                        {
+                            data.Add(buffer[i]);
+                        }
+
+                        if (data.Count > 0 && data[^1] == EndOfMessageByte)
+                        {
+                            HandleMessage(data);
+                            data.Clear();
+                        }
                     }
-
-                    var count = stream.Read(buffer);
-
-                    // hook
-                    streamManip?.OnRead(buffer, count);
-
-                    if (count == 0)
+                    catch (Exception ex)
                     {
-                        _client.Close();
-                        _client.Dispose();
-                        Disconnected?.Invoke();
-                    }
-
-                    for (int i = 0; i < count; i++)
-                    {
-                        data.Add(buffer[i]);
-                    }
-
-                    if (data.Count > 0 && data[^1] == EndOfMessageByte)
-                    {
-                        HandleMessage(data);
-                        data.Clear();
+                        LogError?.Invoke("{0}\n{1}", ex.Message, ex.StackTrace);
                     }
                 }
-            }
-            catch (ThreadAbortException)
-            {
-                _client.Close();
-                _client.Dispose();
-                Disconnected?.Invoke();
-            }
-            catch (Exception ex)
-            {
-                LogError?.Invoke("{0}\n{1}", ex.Message, ex.StackTrace);
-            }
+            });
         }
 
         /// <summary>

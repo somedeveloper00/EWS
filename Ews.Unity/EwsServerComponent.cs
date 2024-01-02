@@ -27,14 +27,14 @@ namespace EWS.Unity
         {
             if (server?.IsRunning() ?? false)
             {
-                server.Close();
+                server.Stop();
             }
             server = new(ipAddress, port);
             server.ServerClosed += () => Debug.Log("server closed!");
-            server.ServerStarted += () => Debug.Log("server started!");
+            server.ServerConnected += () => Debug.Log("server started!");
             server.LogError += LogError;
             server.NewClientConnected += NewClientConnected;
-            server.Start();
+            server.Listen();
         }
 
         private void NewClientConnected(EwsClient client)
@@ -45,7 +45,7 @@ namespace EWS.Unity
         [ContextMenu(nameof(CloseServer))]
         public void CloseServer()
         {
-            server?.Close();
+            server?.Stop();
         }
 
         private void LogError(string msg, object[] args)

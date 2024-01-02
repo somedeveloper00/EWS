@@ -1,3 +1,4 @@
+using System.Threading.Tasks;
 using UnityEngine;
 
 namespace EWS.Unity
@@ -12,15 +13,15 @@ namespace EWS.Unity
         [SerializeField] private Vector3 val;
         private EwsClient _client;
 
-        [ContextMenu(nameof(Connect))]
-        private void Connect()
+        [ContextMenu(nameof(ConnectAsync))]
+        private async Task ConnectAsync()
         {
             if (_client?.IsConnected() ?? false)
             {
                 Debug.LogError("client is connected");
                 return;
             }
-            _client = new();
+            _client = new(address, port);
             _client.LogError += LogError;
             _client.Connected += () => Debug.Log("client connecetd!");
             _client.Disconnected += () => Debug.Log("client disconnected!");
@@ -30,7 +31,7 @@ namespace EWS.Unity
                 Debug.Log($"Received bytes: {bytes.Length}\n[{string.Join(", ", bytes)}]");
             }));
 
-            _client.Connect(address, port); 
+            await _client.ConnectAsync();
         }
 
         [ContextMenu(nameof(Send))]
