@@ -21,7 +21,7 @@ namespace EWS
         /// </summary>
         public static void Exception(this LogErrorDelegate logError, Exception ex)
         {
-            logError?.Invoke("{0}\n{1}", ex.Message, ex.StackTrace);
+            logError?.Invoke("{0}:{1}\n{2}", ex.GetType().Name, ex.Message, ex.StackTrace);
         }
     }
 }
