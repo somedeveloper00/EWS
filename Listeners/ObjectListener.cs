@@ -32,7 +32,7 @@ namespace EWS.Listeners
                 if (onSerializationError is not null)
                     onSerializationError(ex);
                 else 
-                    throw ex;
+                    throw;
             }
         }
     }
