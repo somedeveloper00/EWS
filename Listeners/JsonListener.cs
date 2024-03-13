@@ -1,6 +1,7 @@
 using System;
 using System.Runtime.Serialization;
 using System.Text;
+using EWS.Extensions;
 using EWS.Interfaces;
 
 namespace EWS.Listeners
