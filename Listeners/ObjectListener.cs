@@ -8,7 +8,7 @@ namespace EWS.Listeners
     /// Simple listener that invokes an action with the received object. Converts the bytes to the 
     /// object.
     /// </summary>
-    public class ObjectListener<T> : IEwsEventListener
+    public sealed class ObjectListener<T> : IEwsEventListener
         where T : unmanaged
     {
         private readonly Action<T> objectReceived;
@@ -31,7 +31,7 @@ namespace EWS.Listeners
             {
                 if (onSerializationError is not null)
                     onSerializationError(ex);
-                else 
+                else
                     throw;
             }
         }

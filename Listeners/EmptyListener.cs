@@ -1,21 +1,23 @@
 using System;
-using EWS;
 using EWS.Interfaces;
 
-/// <summary>
-/// Simple listener that invokes when an event is received. It wont pass any data.
-/// </summary>
-public sealed class EmptyListener : IEwsEventListener
+namespace EWS.Listeners
 {
-    private readonly Action received;
-
-    public EmptyListener(Action received)
+    /// <summary>
+    /// Simple listener that invokes when an event is received. It wont pass any data.
+    /// </summary>
+    public sealed class EmptyListener : IEwsEventListener
     {
-        this.received = received;
-    }
+        private readonly Action received;
 
-    public void Process(EwsClient client, byte[] bytes)
-    {
-        received();
+        public EmptyListener(Action received)
+        {
+            this.received = received;
+        }
+
+        public void Process(EwsClient client, byte[] bytes)
+        {
+            received();
+        }
     }
 }

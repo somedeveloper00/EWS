@@ -6,14 +6,13 @@ using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
 using EWS.Interfaces;
-using UnityEngine;
 
 namespace EWS
 {
     /// <summary>
     /// Represents a client for the EWS protocol.
     /// </summary>
-    public class EwsClient
+    public sealed class EwsClient
     {
         /// <summary>
         /// The interval between reconnect attempts.
@@ -25,6 +24,9 @@ namespace EWS
         /// </summary>
         public TimeSpan connectTimeout = TimeSpan.FromSeconds(2);
 
+        /// <summary>
+        /// Intervals (in seconds) to send keep alive messages to the other server.
+        /// </summary>
         public TimeSpan keepAliveIntervals = TimeSpan.FromSeconds(2);
 
         /// <summary>
@@ -78,7 +80,7 @@ namespace EWS
         public event EmptyDelegate Disconnected;
 
         /// <summary>
-        /// Raised when attampting a reconnect
+        /// Raised when attempting a reconnect
         /// </summary>
         public event EmptyDelegate ReconnectAttempted;
 
@@ -101,7 +103,7 @@ namespace EWS
         public IListenerPreprocess listenerPreprocess;
 
         private CancellationTokenSource _clientLoopCts;
-        
+
         private CancellationTokenSource _connectCts;
 
         private readonly bool _keepAlive;
@@ -278,7 +280,6 @@ namespace EWS
                     LogError?.Invoke("server refused EWS connection");
                     // server has refused connection
                     Close();
-                    return;
                 }
             }
             catch (Exception ex)
@@ -303,6 +304,7 @@ namespace EWS
                     await ReconnectAsync(--remainingRetries);
                 }
             }
+            return;
 
             void Close()
             {
@@ -348,12 +350,12 @@ namespace EWS
                 {
                     try
                     {
-                        var c = _socket.Receive(buffer, SocketFlags.None, out var errorCode);
+                        var c = _socket.Receive(buffer, SocketFlags.None, out _);
 
                         // 0 length data happens when the connection is lost
                         if (c == 0)
                         {
-                            Task.Run(() => ReconnectAsync(_maxConnectRetries));
+                            Task.Run(() => ReconnectAsync(_maxConnectRetries), ct);
                             break;
                         }
 
@@ -406,7 +408,7 @@ namespace EWS
                     {
                         // safe to ignore
                     }
-                    catch (Exception ex)
+                    catch (Exception)
                     {
                         // connection is lost. try to reconnect
                         StopCommunicationLoop();
@@ -421,7 +423,6 @@ namespace EWS
                 keepAliveThread?.Abort();
             });
             mainLoopThread.Start();
-            // keepAliveThread.Start();
         }
 
         /// <summary>

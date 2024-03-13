@@ -19,7 +19,6 @@ namespace EWS.Interfaces
         /// Called when the client sends data to the stream. Don't throw exceptions from this method.
         /// </summary>
         /// <param name="bytes">the bytes that were sent.</param>
-        /// <param name="count">the number of bytes that were sent.</param>
         void OnSend(byte[] bytes);
     }
 }

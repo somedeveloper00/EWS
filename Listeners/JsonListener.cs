@@ -3,7 +3,7 @@ using System.Runtime.Serialization;
 using System.Text;
 using EWS.Interfaces;
 
-namespace EWS
+namespace EWS.Listeners
 {
     /// <summary>
     /// Simple listener that invokes an action with the received object.

@@ -1,4 +1,3 @@
-using System;
 using System.Runtime.InteropServices;
 
 namespace EWS.Extensions
@@ -13,7 +12,7 @@ namespace EWS.Extensions
             var size = Marshal.SizeOf(obj);
             var arr = new byte[size];
 
-            IntPtr ptr = Marshal.AllocHGlobal(size);
+            var ptr = Marshal.AllocHGlobal(size);
             Marshal.StructureToPtr(obj, ptr, true);
             Marshal.Copy(ptr, arr, 0, size);
             Marshal.FreeHGlobal(ptr);
@@ -29,7 +28,7 @@ namespace EWS.Extensions
             var size = Marshal.SizeOf<T>();
             if (size > arr.Length) return default;
 
-            IntPtr ptr = Marshal.AllocHGlobal(size);
+            var ptr = Marshal.AllocHGlobal(size);
             Marshal.Copy(arr, 0, ptr, size);
 
             var obj = Marshal.PtrToStructure<T>(ptr);

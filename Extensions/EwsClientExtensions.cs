@@ -1,11 +1,10 @@
 using System;
 using System.Runtime.Serialization;
 using System.Text;
-using EWS.Extensions;
 using EWS.Interfaces;
 using EWS.Listeners;
 
-namespace EWS
+namespace EWS.Extensions
 {
     /// <summary>
     /// contains extensions for the EwsClient class.
