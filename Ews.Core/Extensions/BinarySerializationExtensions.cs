@@ -1,6 +1,6 @@
 using System.Runtime.InteropServices;
 
-namespace EWS.Extensions
+namespace Ews.Core.Extensions
 {
     public static class BinarySerializationExtensions
     {

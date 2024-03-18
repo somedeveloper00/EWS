@@ -1,8 +1,9 @@
 using System;
-using EWS.Extensions;
+using Ews.Core;
+using Ews.Core.Extensions;
 using UnityEngine;
 
-namespace EWS.Unity
+namespace Ews.Unity
 {
     public static class EwsClientExtensions
     {

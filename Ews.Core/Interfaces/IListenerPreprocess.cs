@@ -1,4 +1,4 @@
-namespace EWS.Interfaces
+namespace Ews.Core.Interfaces
 {
     /// <summary>
     /// Represents a preprocessor for calling <see cref="IEwsEventListener"/>s when receiving events from 

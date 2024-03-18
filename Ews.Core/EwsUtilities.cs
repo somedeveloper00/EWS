@@ -1,7 +1,7 @@
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace EWS
+namespace Ews.Core
 {
     public static class EwsUtilities
     {

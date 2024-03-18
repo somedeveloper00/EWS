@@ -5,9 +5,9 @@ using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
-using EWS.Interfaces;
+using Ews.Core.Interfaces;
 
-namespace EWS
+namespace Ews.Core
 {
     /// <summary>
     /// Represents a client for the EWS protocol.
@@ -164,6 +164,11 @@ namespace EWS
         {
             return _clientLoopCts?.IsCancellationRequested == false && _socket?.Connected == true;
         }
+
+        /// <summary>
+        /// Returns the remote endpoint of the internal socket
+        /// </summary>
+        public EndPoint GetRemoteEndPoint() => _socket?.RemoteEndPoint;
 
         /// <summary>
         /// Adds a listener for the given event id. Use <see cref="RemoveListener"/> to remove the listener.
@@ -374,7 +379,7 @@ namespace EWS
                             data.Clear();
                         }
                     }
-                    catch (ThreadAbortException e)
+                    catch (ThreadAbortException)
                     {
                         Disconnected?.Invoke();
                         _socket?.Dispose();

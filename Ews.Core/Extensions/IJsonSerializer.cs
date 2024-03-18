@@ -1,4 +1,4 @@
-namespace EWS.Extensions
+namespace Ews.Core.Extensions
 {
     /// <summary>
     /// Represents a serializer for json objects.

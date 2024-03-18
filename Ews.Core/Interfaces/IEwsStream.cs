@@ -1,6 +1,6 @@
 using System;
 
-namespace EWS.Interfaces
+namespace Ews.Core.Interfaces
 {
     /// <summary>
     /// An interface for a stream that can be used to hook into the EWS client to perform operation while 

@@ -1,7 +1,7 @@
 using System;
-using EWS.Interfaces;
+using Ews.Core.Interfaces;
 
-namespace EWS.Listeners
+namespace Ews.Core.Listeners
 {
     /// <summary>
     /// Simple listener that invokes when an event is received. It wont pass any data.

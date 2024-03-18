@@ -4,7 +4,7 @@ using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace EWS
+namespace Ews.Core
 {
     public delegate void NewClientConnectedDelegate(EwsClient client);
 

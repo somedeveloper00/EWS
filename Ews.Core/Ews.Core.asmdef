@@ -1,5 +1,5 @@
 {
-    "name": "Ews",
+    "name": "Ews.Core",
     "rootNamespace": "",
     "references": [],
     "includePlatforms": [],
@@ -10,5 +10,5 @@
     "autoReferenced": true,
     "defineConstraints": [],
     "versionDefines": [],
-    "noEngineReferences": false
+    "noEngineReferences": true
 }

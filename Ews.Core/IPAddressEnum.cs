@@ -1,6 +1,6 @@
 using System.Net;
 
-namespace EWS
+namespace Ews.Core
 {
     /// <summary>
     /// Specifies the IP address of a network interface (network card) in a machine.

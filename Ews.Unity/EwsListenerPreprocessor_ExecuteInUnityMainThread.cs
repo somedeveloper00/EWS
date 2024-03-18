@@ -1,14 +1,15 @@
 using System;
 using System.Collections.Generic;
-using EWS.Interfaces;
+using Ews.Core;
+using Ews.Core.Interfaces;
 using UnityEngine;
 
-namespace EWS.Unity
+namespace Ews.Unity
 {
     /// <summary>
     /// This is a preprocessor that executes the event in Unity's main thread.
     /// </summary>
-    public class EwsListenerPreprocessor_ExecuteInUnityMainThread : MonoBehaviour, IListenerPreprocess
+    public sealed class EwsListenerPreprocessor_ExecuteInUnityMainThread : MonoBehaviour, IListenerPreprocess
     {
         private readonly Queue<Action> _queue = new(16);
 

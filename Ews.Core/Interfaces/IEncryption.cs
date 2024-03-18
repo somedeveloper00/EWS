@@ -1,4 +1,4 @@
-namespace EWS.Interfaces
+namespace Ews.Core.Interfaces
 {
     /// <summary>
     /// Represents an encryption algorithm used for sending and receiving data.

@@ -1,6 +1,6 @@
 using System;
 
-namespace EWS
+namespace Ews.Core
 {
     /// <summary>
     /// Represents an empty delegate.
