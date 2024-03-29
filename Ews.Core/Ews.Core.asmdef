@@ -1,6 +1,6 @@
 {
     "name": "Ews.Core",
-    "rootNamespace": "",
+    "rootNamespace": "Ews.Core",
     "references": [],
     "includePlatforms": [],
     "excludePlatforms": [],
