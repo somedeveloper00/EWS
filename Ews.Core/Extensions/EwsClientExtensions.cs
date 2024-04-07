@@ -1,6 +1,7 @@
 using System;
 using System.Runtime.Serialization;
 using System.Text;
+using System.Transactions;
 using Ews.Core.Interfaces;
 using Ews.Core.Listeners;
 
@@ -29,12 +30,22 @@ namespace Ews.Core.Extensions
 
         /// <summary>
         /// sends an object of the specified type <typeparamref name="T"/> to the server. 
-        /// (using byte array marshalling,
+        /// (using byte array marshalling)
         /// </summary>
         public static void SendObject<T>(this EwsClient client, byte eventId, T obj)
             where T : unmanaged
         {
             client.Send(eventId, obj.ToNetworkByteArray());
+        }
+
+        /// <summary>
+        /// sends an object of the specified type <typeparamref name="T"/> to the server.
+        /// (using byte array marshalling)
+        /// </summary>
+        public static void SendTransportingData<T>(this EwsClient client, T data)
+            where T : unmanaged, ITransportingData
+        {
+            client.Send(data.EventId, data.ToNetworkByteArray());
         }
 
         /// <summary>
@@ -55,6 +66,19 @@ namespace Ews.Core.Extensions
         {
             ObjectListener<T> listener = new(received, error);
             client.AddListener(eventId, listener);
+            return listener;
+        }
+
+        /// <summary>
+        /// adds a listener that receives an object of the specified type <typeparamref name="T"/> from 
+        /// the server. (using byte array marshalling, so the object must be unmanaged) 
+        /// </summary>
+        public static IEwsEventListener AddTransportingDataListener<T>(this EwsClient client, Action<T> received,
+            Action<Exception> error = null)
+            where T : unmanaged, ITransportingData
+        {
+            ObjectListener<T> listener = new(received, error);
+            client.AddListener(new T().EventId, listener);
             return listener;
         }
 

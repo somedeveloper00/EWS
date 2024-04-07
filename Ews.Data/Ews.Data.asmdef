@@ -1,6 +1,6 @@
 {
     "name": "Ews.Data",
-    "rootNamespace": "",
+    "rootNamespace": "Ews.Data",
     "references": [],
     "includePlatforms": [],
     "excludePlatforms": [],
