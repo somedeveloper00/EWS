@@ -3,9 +3,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using Ews.Core;
 using Ews.Core.Extensions;
-using UnityEngine;
 
-namespace Ews.Realtime
+namespace Ews.Essentials.Realtime
 {
     public static class EwsRealtimeExtensions
     {

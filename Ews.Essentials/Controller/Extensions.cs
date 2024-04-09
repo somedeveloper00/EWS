@@ -4,7 +4,7 @@ using Ews.Core;
 using Ews.Core.Extensions;
 using Ews.Core.Interfaces;
 
-namespace Ews.Controller
+namespace Ews.Essentials.Controller
 {
     public static class Extensions
     {

@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace Ews.Realtime
+namespace Ews.Essentials.Realtime
 {
     /// <summary>
     /// Represents a system that can predict data, given its history

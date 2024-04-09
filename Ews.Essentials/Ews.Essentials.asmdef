@@ -1,7 +1,7 @@
 {
-    "name": "Ews.Data",
-    "rootNamespace": "Ews.Data",
-    "references": [],
+    "name": "Ews.Essentials",
+    "rootNamespace": "Ews.Essentials",
+    "references": ["GUID:74b17e02f6752c449ade7efb83b7e56e"],
     "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": false,

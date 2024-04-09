@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace Ews.Realtime.Predictors
+namespace Ews.Essentials.Realtime.Predictors
 {
     /// <summary>
     /// Linear interpolation prediction

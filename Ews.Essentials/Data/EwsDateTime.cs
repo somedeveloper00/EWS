@@ -1,6 +1,6 @@
 using System;
 
-namespace Ews.Data
+namespace Ews.Essentials.Data
 {
     /// <summary>
     /// A <see cref="DateTime"/> unmanaged alternative. Uses Unix Epoch in seconds.

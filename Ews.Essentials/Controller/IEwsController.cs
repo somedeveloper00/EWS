@@ -1,6 +1,6 @@
 using Ews.Core;
 
-namespace Ews.Controller
+namespace Ews.Essentials.Controller
 {
     /// <summary>
     /// Base controller class. Do not use it directly!

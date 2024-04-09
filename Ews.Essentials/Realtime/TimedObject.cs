@@ -1,6 +1,6 @@
 using System;
 
-namespace Ews.Realtime
+namespace Ews.Essentials.Realtime
 {
     /// <summary>
     /// A data with time attached to it

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 
-namespace Ews.Realtime
+namespace Ews.Essentials.Realtime
 {
     public sealed class TypePredictionHandler<T>
         where T : unmanaged

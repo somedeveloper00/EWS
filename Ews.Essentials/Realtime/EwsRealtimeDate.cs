@@ -1,6 +1,6 @@
 using System;
 
-namespace Ews.Realtime
+namespace Ews.Essentials.Realtime
 {
     /// <summary>
     /// An unmanaged representation of <see cref="DateTime"/> which uses the <see cref="DateTime.Ticks"/> property to
