@@ -1,7 +1,9 @@
 {
     "name": "Ews.Essentials",
     "rootNamespace": "Ews.Essentials",
-    "references": ["GUID:74b17e02f6752c449ade7efb83b7e56e"],
+    "references": [
+        "GUID:74b17e02f6752c449ade7efb83b7e56e"
+    ],
     "includePlatforms": [],
     "excludePlatforms": [],
     "allowUnsafeCode": false,
@@ -10,5 +12,5 @@
     "autoReferenced": true,
     "defineConstraints": [],
     "versionDefines": [],
-    "noEngineReferences": true
+    "noEngineReferences": false
 }

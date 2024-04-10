@@ -3,7 +3,7 @@ using Ews.Core;
 using Ews.Core.Extensions;
 using UnityEngine;
 
-namespace Ews.Unity
+namespace Ews.Essentials.Unity
 {
     public static class EwsClientExtensions
     {

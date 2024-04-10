@@ -85,7 +85,7 @@ namespace Ews.Core
         public event EmptyDelegate ReconnectAttempted;
 
         /// <summary>
-        /// The encryption algorithm used for sending and receiving data. (null for no encryptionإ)
+        /// The encryption algorithm used for sending and receiving data. (null for no encryption)
         /// </summary>
         public IEncryption encryption;
 
@@ -101,6 +101,8 @@ namespace Ews.Core
         /// execution of listener is at this class's responsibility.
         /// </summary>
         public IListenerPreprocess listenerPreprocess;
+
+        public IConnectionEventsPreprocess connectionEventsPreprocess;
 
         private CancellationTokenSource _clientLoopCts;
 
@@ -205,12 +207,12 @@ namespace Ews.Core
         {
             if (!IsConnected())
             {
-                LogError?.Invoke("client is not connected");
+                Error("client is not connected");
                 return;
             }
             if (eventId == 0x00)
             {
-                LogError?.Invoke("cannot send message with event id 0x00");
+                Error("cannot send message with event id 0x00");
                 return;
             }
 
@@ -220,7 +222,7 @@ namespace Ews.Core
                 encryption.Encrypt(this, ref message, out var errorMessage);
                 if (!string.IsNullOrEmpty(errorMessage))
                 {
-                    LogError?.Invoke(errorMessage);
+                    Error(errorMessage);
                     return;
                 }
             }
@@ -254,7 +256,7 @@ namespace Ews.Core
             try
             {
                 // connect
-                _socket = new Socket(AddressFamily.InterNetwork, SocketType.Stream, _protocol);
+                _socket = new(AddressFamily.InterNetwork, SocketType.Stream, _protocol);
                 if (_keepAlive)
                 {
                     _socket.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.KeepAlive, true);
@@ -273,7 +275,10 @@ namespace Ews.Core
                 if (buffers.SequenceEqual(EwsUtilities.SecretAccepted))
                 {
                     // server has accepted connection
-                    Connected?.Invoke();
+                    if (connectionEventsPreprocess is not null)
+                        connectionEventsPreprocess.Connected(() => Connected?.Invoke());
+                    else
+                        Connected?.Invoke();
 
                     // start loop
                     _clientLoopCts?.Cancel();
@@ -282,7 +287,7 @@ namespace Ews.Core
                 }
                 else
                 {
-                    LogError?.Invoke("server refused EWS connection");
+                    Error("server refused EWS connection");
                     // server has refused connection
                     Close();
                 }
@@ -299,7 +304,7 @@ namespace Ews.Core
                 // log unexpected error
                 if (!timeoutCts.IsCancellationRequested)
                 {
-                    LogError?.Exception(ex);
+                    ErrorException(ex);
                 }
 
                 // retry
@@ -323,7 +328,10 @@ namespace Ews.Core
         /// </summary>
         private async Task ReconnectAsync(int remainingRetries)
         {
-            ReconnectAttempted?.Invoke();
+            if (connectionEventsPreprocess is not null)
+                connectionEventsPreprocess.ReconnectAttempted(() => ReconnectAttempted?.Invoke());
+            else
+                ReconnectAttempted?.Invoke();
             StopCommunicationLoop();
 
             _connectCts = new();
@@ -381,13 +389,17 @@ namespace Ews.Core
                     }
                     catch (ThreadAbortException)
                     {
-                        Disconnected?.Invoke();
+                        if (connectionEventsPreprocess is not null)
+                            connectionEventsPreprocess.Disconnected(() => Disconnected?.Invoke());
+                        else
+                            Disconnected?.Invoke();
+
                         _socket?.Dispose();
                         break;
                     }
                     catch (Exception ex)
                     {
-                        LogError?.Exception(ex);
+                        ErrorException(ex);
                     }
                 }
             });
@@ -406,7 +418,7 @@ namespace Ews.Core
                         int c = _socket.Send(new byte[] { 0x00 }, SocketFlags.None, out var errorCode);
                         if (c == 0) // its disconnected
                         {
-                            throw new Exception();
+                            throw new();
                         }
                     }
                     catch (ThreadAbortException)
@@ -442,7 +454,7 @@ namespace Ews.Core
                 encryption.Decrypt(this, ref message, out var errorMessage);
                 if (!string.IsNullOrEmpty(errorMessage))
                 {
-                    LogError?.Invoke(errorMessage);
+                    Error(errorMessage);
                     return;
                 }
             }
@@ -480,7 +492,7 @@ namespace Ews.Core
             }
             catch (Exception ex)
             {
-                LogError?.Invoke("{0}\n{1}", ex.Message, ex.StackTrace);
+                Error("{0}\n{1}", ex.Message, ex.StackTrace);
             }
         }
 
@@ -491,6 +503,29 @@ namespace Ews.Core
         private void EnsureListenerForEventIdIsNotNull(byte eventId)
         {
             _listeners[eventId] ??= new();
+        }
+
+        /// <summary>
+        /// Raises <see cref="LogError"/> either through <see cref="connectionEventsPreprocess"/> or directoly
+        /// </summary>
+        private void Error(string message, params object[] args)
+        {
+            if (connectionEventsPreprocess is not null)
+                connectionEventsPreprocess.OnError(() => LogError?.Invoke(message, args));
+            else
+                LogError?.Invoke(message, args);
+        }
+
+        /// <summary>
+        /// Same as <see cref="Error"/>, only uses a nice format for <param name="exception"></param>.
+        /// </summary>
+        private void ErrorException(Exception exception)
+        {
+            if (connectionEventsPreprocess is not null)
+                connectionEventsPreprocess.OnError(() =>
+                    LogError?.Invoke("{0}:{1}\n{2}", exception.GetType().Name, exception.Message, exception.StackTrace));
+            else
+                LogError?.Invoke("{0}:{1}\n{2}", exception.GetType().Name, exception.Message, exception.StackTrace);
         }
     }
 }
