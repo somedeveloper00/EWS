@@ -81,13 +81,6 @@ namespace Ews.Core
         public event EmptyDelegate ReconnectAttempted;
 
         /// <summary>
-        /// The stream hook used to hook into the client stream. (for sending data, the hook is called 
-        /// after the encryption algorithm is applied, but for receiving data, the hook is called before the 
-        /// decryption algorithm is applied). (null for no hook)
-        /// </summary>
-        public IEwsStreamManip streamManip;
-
-        /// <summary>
         /// preprocessor for when receiving new events. if its null, the listener will be executed right away, otherwise, the 
         /// execution of listener is at this class's responsibility.
         /// </summary>
@@ -212,10 +205,7 @@ namespace Ews.Core
             BitConverter.GetBytes(message.Length).CopyTo(data, 1);
             message.CopyTo(data, 1 + sizeof(int));
 
-            // hook
-            streamManip?.OnSend(data.ToArray());
-
-            _socket.SendAsync(data.ToArray(), SocketFlags.None, _clientLoopCts.Token);
+            _socket.SendAsync(data, SocketFlags.None, _clientLoopCts.Token);
         }
 
         /// <summary>
@@ -349,11 +339,8 @@ namespace Ews.Core
                             break;
                         }
 
-                        // hook
-                        streamManip?.OnRead(buffer, c);
-
                         // handle message
-                        var size = BitConverter.ToInt32(buffer[1.. sizeof(int)]);
+                        var size = BitConverter.ToInt32(buffer[1.. (1 + sizeof(int))]);
                         if (size > c + 1 + sizeof(int))
                         {
                             // message is split to multiple packets
@@ -403,7 +390,7 @@ namespace Ews.Core
                     }
                     try
                     {
-                        int c = _socket.Send(new byte[] { 0x00 }, SocketFlags.None, out var errorCode);
+                        int c = _socket.Send(new byte[] { 0x00 }, SocketFlags.None, out _);
                         if (c == 0) // its disconnected
                         {
                             throw new();
