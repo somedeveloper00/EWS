@@ -20,11 +20,11 @@ namespace Ews.Core.Listeners
             this.onSerializationError = onSerializationError;
         }
 
-        public void Process(EwsClient client, byte[] bytes)
+        public void Process(EwsClient client, Span<byte> bytes)
         {
             try
             {
-                var obj = bytes.FromNetworkByteArray<T>();
+                var obj = bytes.ToArray().FromNetworkByteArray<T>();
                 objectReceived(obj);
             }
             catch (Exception ex)

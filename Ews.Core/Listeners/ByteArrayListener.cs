@@ -15,9 +15,9 @@ namespace Ews.Core.Listeners
             _action = action;
         }
 
-        public void Process(EwsClient client, byte[] bytes)
+        public void Process(EwsClient client, Span<byte> bytes)
         {
-            _action?.Invoke(client, bytes);
+            _action?.Invoke(client, bytes.ToArray());
         }
     }
 }

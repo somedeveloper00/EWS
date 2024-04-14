@@ -1,3 +1,5 @@
+using System;
+
 namespace Ews.Core.Interfaces
 {
     /// <summary>
@@ -7,8 +9,8 @@ namespace Ews.Core.Interfaces
     public interface IListenerPreprocess
     {
         /// <summary>
-        /// handles the execution of a listener apon receiving an event. 
+        /// handles the execution of a listener upon receiving an event. 
         /// </summary>
-        void ExecuteNewEvent(EwsClient client, byte[] message, IEwsEventListener listener);
+        void ExecuteNewEvent(EwsClient client, Span<byte> message, IEwsEventListener listener);
     }
 }

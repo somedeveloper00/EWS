@@ -1,3 +1,5 @@
+using System;
+
 namespace Ews.Core.Interfaces
 {
     /// <summary>
@@ -8,6 +10,6 @@ namespace Ews.Core.Interfaces
         /// <summary>
         /// Processes the given bytes.
         /// </summary>
-        void Process(EwsClient client, byte[] bytes);
+        void Process(EwsClient client, Span<byte> bytes);
     }
 }

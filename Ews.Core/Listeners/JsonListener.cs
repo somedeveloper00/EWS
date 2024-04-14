@@ -24,7 +24,7 @@ namespace Ews.Core.Listeners
             _onSerializationError = onSerializationError;
         }
 
-        public void Process(EwsClient client, byte[] bytes)
+        public void Process(EwsClient client, Span<byte> bytes)
         {
             try
             {

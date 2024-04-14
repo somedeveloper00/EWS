@@ -1,3 +1,4 @@
+using System;
 using System.Runtime.InteropServices;
 
 namespace Ews.Core.Extensions
@@ -21,7 +22,7 @@ namespace Ews.Core.Extensions
         }
 
         /// <summary>
-        /// Converts the given byte array to a cross platform object to be used in the application.
+        /// Converts the given byte array to a cross-platform object to be used in the application.
         /// </summary>
         public static T FromNetworkByteArray<T>(this byte[] arr) where T : unmanaged
         {

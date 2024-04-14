@@ -5,6 +5,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
+using System.Xml;
 using Ews.Core.Interfaces;
 
 namespace Ews.Core
@@ -28,11 +29,6 @@ namespace Ews.Core
         /// Intervals (in seconds) to send keep alive messages to the other server.
         /// </summary>
         public TimeSpan keepAliveIntervals = TimeSpan.FromSeconds(2);
-
-        /// <summary>
-        /// The byte that marks the end of a message.
-        /// </summary>
-        private const byte EndOfMessageByte = 0x00;
 
         /// <summary>
         /// The underlying Socke<see cref="Socket"/>.
@@ -83,11 +79,6 @@ namespace Ews.Core
         /// Raised when attempting a reconnect
         /// </summary>
         public event EmptyDelegate ReconnectAttempted;
-
-        /// <summary>
-        /// The encryption algorithm used for sending and receiving data. (null for no encryption)
-        /// </summary>
-        public IEncryption encryption;
 
         /// <summary>
         /// The stream hook used to hook into the client stream. (for sending data, the hook is called 
@@ -216,23 +207,10 @@ namespace Ews.Core
                 return;
             }
 
-            // hook
-            if (encryption is not null)
-            {
-                encryption.Encrypt(this, ref message, out var errorMessage);
-                if (!string.IsNullOrEmpty(errorMessage))
-                {
-                    Error(errorMessage);
-                    return;
-                }
-            }
-
-            var data = new List<byte>(message.Length + 2)
-            {
-                eventId
-            };
-            data.AddRange(message);
-            data.Add(EndOfMessageByte);
+            var data = new byte[1 + sizeof(int) + message.Length];
+            data[0] = eventId;
+            BitConverter.GetBytes(message.Length).CopyTo(data, 1);
+            message.CopyTo(data, 1 + sizeof(int));
 
             // hook
             streamManip?.OnSend(data.ToArray());
@@ -355,8 +333,7 @@ namespace Ews.Core
         {
             var mainLoopThread = new Thread(() =>
             {
-                var buffer = new byte[_bufferSize];
-                var data = new List<byte>(_bufferSize);
+                Span<byte> buffer = stackalloc byte[_bufferSize];
 
                 // listen for messages
                 while (true)
@@ -376,15 +353,26 @@ namespace Ews.Core
                         streamManip?.OnRead(buffer, c);
 
                         // handle message
-                        for (int i = 0; i < c; i++)
+                        var size = BitConverter.ToInt32(buffer[1.. sizeof(int)]);
+                        if (size > c + 1 + sizeof(int))
                         {
-                            data.Add(buffer[i]);
-                        }
+                            // message is split to multiple packets
+                            var wholeData = new byte[size];
+                            buffer[(1 + sizeof(int))..].CopyTo(wholeData);
+                            byte id = buffer[0];
+                            int index = buffer.Length - (1 + sizeof(int));
 
-                        if (data.Count > 0 && data[^1] == EndOfMessageByte)
+                            while (index < size)
+                            {
+                                c = _socket.Receive(buffer, SocketFlags.None, out _);
+                                buffer[..c].CopyTo(wholeData[index..]);
+                                index += c;
+                            }
+                            HandleMessage(id, wholeData);
+                        }
+                        else
                         {
-                            HandleMessage(data);
-                            data.Clear();
+                            HandleMessage(buffer[0], buffer[(1 + sizeof(int))..]);
                         }
                     }
                     catch (ThreadAbortException)
@@ -445,23 +433,12 @@ namespace Ews.Core
         /// <summary>
         /// Handles the given message. Calls appropriate <see cref="_listeners"/>
         /// </summary>
-        private void HandleMessage(List<byte> data)
+        private void HandleMessage(byte eventId, Span<byte> data)
         {
-            byte eventId = data[0];
-            var message = data.Count <= 2 ? Array.Empty<byte>() : data.Skip(1).Take(data.Count - 1).ToArray();
-            if (encryption is not null)
-            {
-                encryption.Decrypt(this, ref message, out var errorMessage);
-                if (!string.IsNullOrEmpty(errorMessage))
-                {
-                    Error(errorMessage);
-                    return;
-                }
-            }
             EnsureListenerForEventIdIsNotNull(0);
             foreach (var listener in _listeners[0])
             {
-                ExecuteListener(message, listener);
+                ExecuteListener(data, listener);
             }
 
             if (eventId != 0)
@@ -469,7 +446,7 @@ namespace Ews.Core
                 EnsureListenerForEventIdIsNotNull(eventId);
                 foreach (var listener in _listeners[eventId])
                 {
-                    ExecuteListener(message, listener);
+                    ExecuteListener(data, listener);
                 }
             }
         }
@@ -477,7 +454,7 @@ namespace Ews.Core
         /// <summary>
         /// Executes the given listener. (Catches exceptions)
         /// </summary>
-        private void ExecuteListener(byte[] message, IEwsEventListener listener)
+        private void ExecuteListener(Span<byte> message, IEwsEventListener listener)
         {
             try
             {

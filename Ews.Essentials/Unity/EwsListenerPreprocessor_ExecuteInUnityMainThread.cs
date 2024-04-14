@@ -22,8 +22,11 @@ namespace Ews.Essentials.Unity
             }
         }
 
-        void IListenerPreprocess.ExecuteNewEvent(EwsClient client, byte[] message, IEwsEventListener listener) =>
-            _queue.Enqueue(() => listener.Process(client, message));
+        void IListenerPreprocess.ExecuteNewEvent(EwsClient client, Span<byte> message, IEwsEventListener listener)
+        {
+            var array = message.ToArray();
+            _queue.Enqueue(() => listener.Process(client, array));
+        }
 
         void IConnectionEventsPreprocess.Connected(Action callback) => _queue.Enqueue(callback);
         void IConnectionEventsPreprocess.Disconnected(Action callback) => _queue.Enqueue(callback);

@@ -18,7 +18,7 @@ namespace Ews.Core.Listeners
             this.onError = onError;
         }
 
-        public void Process(EwsClient client, byte[] bytes)
+        public void Process(EwsClient client, Span<byte> bytes)
         {
             try
             {
