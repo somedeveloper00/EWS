@@ -1,11 +1,9 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Net;
 using System.Net.Sockets;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Xml;
 using Ews.Core.Interfaces;
 
 namespace Ews.Core
@@ -200,7 +198,7 @@ namespace Ews.Core
                 return;
             }
 
-            var data = new byte[1 + sizeof(int) + message.Length];
+            var data = new byte[sizeof(int) + 1 + message.Length];
             data[0] = eventId;
             BitConverter.GetBytes(message.Length).CopyTo(data, 1);
             message.CopyTo(data, 1 + sizeof(int));
@@ -323,44 +321,47 @@ namespace Ews.Core
         {
             var mainLoopThread = new Thread(() =>
             {
-                Span<byte> buffer = stackalloc byte[_bufferSize];
+                Span<byte> headerBuffer = stackalloc byte[sizeof(int) + 1];
 
                 // listen for messages
                 while (true)
                 {
                     try
                     {
-                        var c = _socket.Receive(buffer, SocketFlags.None, out _);
+                        int c;
 
+                        c = _socket.Receive(headerBuffer[..(sizeof(int) + 1)], SocketFlags.None, out _);
                         // 0 length data happens when the connection is lost
                         if (c == 0)
                         {
                             Task.Run(() => ReconnectAsync(_maxConnectRetries), ct);
                             break;
                         }
-
-                        // handle message
-                        var size = BitConverter.ToInt32(buffer[1.. (1 + sizeof(int))]);
-                        if (size > c + 1 + sizeof(int))
+                        // received message in incorrect format
+                        if (c != (sizeof(int) + 1))
                         {
-                            // message is split to multiple packets
-                            var wholeData = new byte[size];
-                            buffer[(1 + sizeof(int))..].CopyTo(wholeData);
-                            byte id = buffer[0];
-                            int index = buffer.Length - (1 + sizeof(int));
+                            Error("received header of length {0}, expected {1}", c, sizeof(int) + 1);
+                            continue;
+                        }
 
-                            while (index < size)
-                            {
-                                c = _socket.Receive(buffer, SocketFlags.None, out _);
-                                buffer[..c].CopyTo(wholeData[index..]);
-                                index += c;
-                            }
-                            HandleMessage(id, wholeData);
-                        }
-                        else
+                        byte id = headerBuffer[0];
+                        int dataLength = BitConverter.ToInt32(headerBuffer[1..(sizeof(int) + 1)]);
+                        var dataBuffer = new byte[dataLength];
+
+                        c = _socket.Receive(dataBuffer, SocketFlags.None, out _);
+                        // 0 length data happens when the connection is lost
+                        if (c == 0)
                         {
-                            HandleMessage(buffer[0], buffer[(1 + sizeof(int))..]);
+                            Task.Run(() => ReconnectAsync(_maxConnectRetries), ct);
+                            break;
                         }
+                        // received message in incorrect format
+                        if (c != dataLength)
+                        {
+                            Error("received data of length {1}, expected {1}", c, dataLength);
+                            continue;
+                        }
+                        HandleMessage(id, dataBuffer);
                     }
                     catch (ThreadAbortException)
                     {
@@ -420,7 +421,7 @@ namespace Ews.Core
         /// <summary>
         /// Handles the given message. Calls appropriate <see cref="_listeners"/>
         /// </summary>
-        private void HandleMessage(byte eventId, Span<byte> data)
+        private void HandleMessage(byte eventId, byte[] data)
         {
             EnsureListenerForEventIdIsNotNull(0);
             foreach (var listener in _listeners[0])
@@ -441,7 +442,7 @@ namespace Ews.Core
         /// <summary>
         /// Executes the given listener. (Catches exceptions)
         /// </summary>
-        private void ExecuteListener(Span<byte> message, IEwsEventListener listener)
+        private void ExecuteListener(byte[] message, IEwsEventListener listener)
         {
             try
             {
