@@ -14,10 +14,10 @@ namespace Ews.Essentials.Controller
         /// Adds a <see cref="IEwsController{T}"/> to listen to and process upon listen. This is a shortcut to using
         /// <see cref="EwsClientExtensions.AddObjectListener{T}"/>
         /// </summary>
-        public static void AddController<T2>(this EwsClient client, IEwsController<T2> controller, Action<Exception> onError)
-            where T2 : unmanaged
+        public static void AddController<T>(this EwsClient client, IEwsController<T> controller, Action<Exception> onError)
+            where T : unmanaged
         {
-            var listener = client.AddObjectListener<T2>(
+            var listener = client.AddObjectListener<T>(
                 eventId: controller.EventId,
                 received: data => controller.Process(data, client),
                 error: exception => onError?.Invoke(exception));
