@@ -46,7 +46,7 @@ namespace Ews.Core
         /// <summary>
         /// The endpoint that the client connects to.
         /// </summary>
-        private readonly EndPoint _endpoint;
+        private readonly IPEndPoint _endpoint;
 
         /// <summary>
         /// The protocol that the client uses.
@@ -99,7 +99,7 @@ namespace Ews.Core
         {
             _socket = socket;
             _bufferSize = bufferSize;
-            _endpoint = socket.RemoteEndPoint;
+            _endpoint = socket.RemoteEndPoint as IPEndPoint;
             _protocol = socket.ProtocolType;
             _keepAlive = keepAlive;
             _maxConnectRetries = maxConnectRetries;
@@ -152,7 +152,7 @@ namespace Ews.Core
         /// <summary>
         /// Returns the remote endpoint of the internal socket
         /// </summary>
-        public EndPoint GetRemoteEndPoint() => _socket?.RemoteEndPoint;
+        public IPEndPoint GetRemoteEndPoint() => _socket?.RemoteEndPoint as IPEndPoint;
 
         /// <summary>
         /// Adds a listener for the given event id. Use <see cref="RemoveListener"/> to remove the listener.
