@@ -11,7 +11,10 @@ namespace Ews.Essentials.Data.FixedStrings
 
         public FixedString8(string str)
         {
-            buffer = new();
+            buffer = new()
+            {
+                _count = str.Length
+            };
             for (int i = 0; i < str.Length; i++)
             {
                 buffer[i] = str[i];
@@ -44,7 +47,11 @@ namespace Ews.Essentials.Data.FixedStrings
 
         public FixedString32(string str)
         {
-            buffer = new();
+            buffer = new()
+            {
+                _count = str.Length
+            };
+
             for (int i = 0; i < str.Length; i++)
             {
                 buffer[i] = str[i];
@@ -77,7 +84,11 @@ namespace Ews.Essentials.Data.FixedStrings
 
         public FixedString128(string str)
         {
-            buffer = new();
+            buffer = new()
+            {
+                _count = str.Length
+            };
+
             for (int i = 0; i < str.Length; i++)
             {
                 buffer[i] = str[i];
