@@ -3,6 +3,7 @@ using System.Runtime.CompilerServices;
 
 namespace Ews.Essentials.Data
 {
+    [System.Diagnostics.DebuggerDisplay("Count = {_count}")]
     [Serializable]
     public struct FixedList4<T> : IFixedList<T> where T : unmanaged
     {

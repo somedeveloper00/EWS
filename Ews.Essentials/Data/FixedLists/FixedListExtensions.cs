@@ -1,10 +1,12 @@
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 
 namespace Ews.Essentials.Data
 {
     public static class FixedListExtensions
     {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static IEnumerator<T2> Select<T1, T2>(this IFixedList<T1> list, Func<T1, T2> predecate)
             where T1 : unmanaged
         {
@@ -14,6 +16,7 @@ namespace Ews.Essentials.Data
             }
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static IEnumerator<T> Where<T>(this IFixedList<T> list, Func<T, bool> condition)
             where T : unmanaged
         {
@@ -25,6 +28,7 @@ namespace Ews.Essentials.Data
             }
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ref T refat<T>(this ref FixedList4<T> list, int index)
             where T : unmanaged
         {
@@ -39,6 +43,7 @@ namespace Ews.Essentials.Data
             }
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ref T refat<T>(this ref FixedList8<T> list, int index)
             where T : unmanaged
         {
@@ -57,6 +62,7 @@ namespace Ews.Essentials.Data
             }
         }
 
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public static ref T refat<T>(this ref FixedList16<T> list, int index)
             where T : unmanaged
         {
