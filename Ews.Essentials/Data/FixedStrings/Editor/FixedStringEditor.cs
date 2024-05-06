@@ -1,3 +1,4 @@
+#if UNITY_EDITOR
 using UnityEngine;
 using UnityEditor;
 using System.Collections.Generic;
@@ -47,3 +48,4 @@ internal class FixedStringEditor32 : FixedStringEditor { }
 
 [CustomPropertyDrawer(typeof(FixedString128))]
 internal class FixedStringEditor128 : FixedStringEditor { }
+#endif

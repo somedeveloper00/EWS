@@ -182,7 +182,7 @@ namespace Ews.Essentials.Data
         {
             for (int i = index + 1; i < _count; i++)
             {
-                this[index - 1] = this[index];
+                this[i - 1] = this[i];
             }
             _count--;
         }
