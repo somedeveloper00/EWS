@@ -33,7 +33,7 @@ namespace Ews.Essentials.Data.FixedStrings
             var sb = new System.Text.StringBuilder();
             for (int i = 0; i < buffer.Count; i++)
             {
-                sb.Append(buffer.rrefat(i));
+                sb.Append(buffer.rrat(i));
             }
             return sb.ToString();
         }
@@ -70,7 +70,7 @@ namespace Ews.Essentials.Data.FixedStrings
             var sb = new System.Text.StringBuilder();
             for (int i = 0; i < buffer.Count; i++)
             {
-                sb.Append(buffer.rrefat(i));
+                sb.Append(buffer.rrat(i));
             }
             return sb.ToString();
         }
@@ -107,7 +107,7 @@ namespace Ews.Essentials.Data.FixedStrings
             var sb = new System.Text.StringBuilder();
             for (int i = 0; i < buffer.Count; i++)
             {
-                sb.Append(buffer.rrefat(i));
+                sb.Append(buffer.rrat(i));
             }
             return sb.ToString();
         }
