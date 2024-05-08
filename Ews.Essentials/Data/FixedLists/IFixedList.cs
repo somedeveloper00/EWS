@@ -2,9 +2,9 @@ namespace Ews.Essentials.Data
 {
     public interface IFixedList<T> where T : unmanaged
     {
-        int Count { get; }
+        int Count { get; set; }
         int Capacity { get; }
-        T this[int index] { get; set; }
+        ref T this[int index] { get; }
         int IndexOf(T item);
         void Add(T value);
         void Insert(int index, T value);

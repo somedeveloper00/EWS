@@ -10,7 +10,7 @@ internal abstract class FixedStringEditor : PropertyDrawer
     public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
     {
         var buffer = property.FindPropertyRelative("buffer");
-        var count = buffer.FindPropertyRelative("_count");
+        var count = buffer.FindPropertyRelative("Count");
 
         List<SerializedProperty> props = new();
         int index = 0;

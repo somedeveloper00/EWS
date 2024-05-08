@@ -13,7 +13,7 @@ namespace Ews.Essentials.Data.FixedStrings
         {
             buffer = new()
             {
-                _count = str.Length
+                Count = str.Length
             };
             for (int i = 0; i < str.Length; i++)
             {
@@ -33,7 +33,7 @@ namespace Ews.Essentials.Data.FixedStrings
             var sb = new System.Text.StringBuilder();
             for (int i = 0; i < buffer.Count; i++)
             {
-                sb.Append(buffer.rrat(i));
+                sb.Append(buffer[i]);
             }
             return sb.ToString();
         }
@@ -49,7 +49,7 @@ namespace Ews.Essentials.Data.FixedStrings
         {
             buffer = new()
             {
-                _count = str.Length
+                Count = str.Length
             };
 
             for (int i = 0; i < str.Length; i++)
@@ -70,7 +70,7 @@ namespace Ews.Essentials.Data.FixedStrings
             var sb = new System.Text.StringBuilder();
             for (int i = 0; i < buffer.Count; i++)
             {
-                sb.Append(buffer.rrat(i));
+                sb.Append(buffer[i]);
             }
             return sb.ToString();
         }
@@ -86,7 +86,7 @@ namespace Ews.Essentials.Data.FixedStrings
         {
             buffer = new()
             {
-                _count = str.Length
+                Count = str.Length
             };
 
             for (int i = 0; i < str.Length; i++)
@@ -107,7 +107,7 @@ namespace Ews.Essentials.Data.FixedStrings
             var sb = new System.Text.StringBuilder();
             for (int i = 0; i < buffer.Count; i++)
             {
-                sb.Append(buffer.rrat(i));
+                sb.Append(buffer[i]);
             }
             return sb.ToString();
         }

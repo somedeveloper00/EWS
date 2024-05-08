@@ -1,41 +1,29 @@
 using System;
 using System.Runtime.CompilerServices;
+using Unity.Collections.LowLevel.Unsafe;
 
 namespace Ews.Essentials.Data
 {
-    [System.Diagnostics.DebuggerDisplay("Count = {_count}")]
+    [System.Diagnostics.DebuggerDisplay("Count = {Count}")]
     [Serializable]
     public struct flist4<T> : IFixedList<T> where T : unmanaged
     {
-        public int _count;
+        [field: UnityEngine.SerializeField]
+        public int Count { get; set; }
         public T _0;
         public T _1;
         public T _2;
         public T _3;
 
-        public readonly int Count => _count;
         public readonly int Capacity => 4;
 
-        public T this[int index]
+        public unsafe ref T this[int index]
         {
-            readonly get => index switch
+            get
             {
-                0 => _0,
-                1 => _1,
-                2 => _2,
-                3 => _3,
-                _ => throw new ArgumentOutOfRangeException(nameof(index))
-            };
-            set
-            {
-                switch (index)
+                fixed (void* ptr = &_0)
                 {
-                    case 0: _0 = value; break;
-                    case 1: _1 = value; break;
-                    case 2: _2 = value; break;
-                    case 3: _3 = value; break;
-                    default:
-                        throw new ArgumentOutOfRangeException(nameof(index));
+                    return ref UnsafeUtility.ArrayElementAsRef<T>(ptr, index);
                 }
             }
         }
@@ -53,8 +41,8 @@ namespace Ews.Essentials.Data
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Add(T item)
         {
-            CheckCapacity(_count + 1);
-            this[_count++] = item;
+            CheckCapacity(Count + 1);
+            this[Count++] = item;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -62,17 +50,17 @@ namespace Ews.Essentials.Data
         {
             CheckCapacity(index);
             this[index] = item;
-            _count = index == _count ? _count + 1 : _count;
+            Count = index == Count ? Count + 1 : Count;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void RemoveAt(int index)
         {
-            for (int i = index + 1; i < _count; i++)
+            for (int i = index + 1; i < Count; i++)
             {
                 this[i - 1] = this[i];
             }
-            _count--;
+            Count--;
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
@@ -91,7 +79,16 @@ namespace Ews.Essentials.Data
             {
                 this[i] = default;
             }
-            _count = 0;
+            Count = 0;
+        }
+
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        private readonly void BoundsCheck(int index)
+        {
+            if (index < 0 || index >= Count)
+            {
+                throw new IndexOutOfRangeException(index.ToString());
+            }
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
