@@ -25,6 +25,7 @@ namespace Ews.Essentials.Data
         {
             get
             {
+                BoundsCheck(index);
                 fixed (void* ptr = &_0)
                 {
                     return ref UnsafeUtility.ArrayElementAsRef<T>(ptr, index);
@@ -32,13 +33,15 @@ namespace Ews.Essentials.Data
             }
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public readonly int IndexOf(T item)
+        public int IndexOf(T item)
         {
-            if (_0.Equals(item)) return 0;
-            if (_1.Equals(item)) return 1;
-            if (_2.Equals(item)) return 2;
-            if (_3.Equals(item)) return 3;
+            for (int i = 0; i < Count; i++)
+            {
+                if (this[i].Equals(item))
+                {
+                    return i;
+                }
+            }
             return -1;
         }
 
