@@ -5,7 +5,7 @@ namespace Ews.Essentials.Data
 {
     [System.Diagnostics.DebuggerDisplay("Count = {_count}")]
     [Serializable]
-    public struct FixedList32<T> : IFixedList<T> where T : unmanaged
+    public struct flist16<T> : IFixedList<T> where T : unmanaged
     {
         public int _count;
         public T _0;
@@ -24,25 +24,9 @@ namespace Ews.Essentials.Data
         public T _13;
         public T _14;
         public T _15;
-        public T _16;
-        public T _17;
-        public T _18;
-        public T _19;
-        public T _20;
-        public T _21;
-        public T _22;
-        public T _23;
-        public T _24;
-        public T _25;
-        public T _26;
-        public T _27;
-        public T _28;
-        public T _29;
-        public T _30;
-        public T _31;
 
         public readonly int Count => _count;
-        public readonly int Capacity => 32;
+        public readonly int Capacity => 16;
 
         public T this[int index]
         {
@@ -64,22 +48,6 @@ namespace Ews.Essentials.Data
                 13 => _13,
                 14 => _14,
                 15 => _15,
-                16 => _16,
-                17 => _17,
-                18 => _18,
-                19 => _19,
-                20 => _20,
-                21 => _21,
-                22 => _22,
-                23 => _23,
-                24 => _24,
-                25 => _25,
-                26 => _26,
-                27 => _27,
-                28 => _28,
-                29 => _29,
-                30 => _30,
-                31 => _31,
                 _ => throw new ArgumentOutOfRangeException(nameof(index))
             };
             set
@@ -102,22 +70,6 @@ namespace Ews.Essentials.Data
                     case 13: _13 = value; break;
                     case 14: _14 = value; break;
                     case 15: _15 = value; break;
-                    case 16: _16 = value; break;
-                    case 17: _17 = value; break;
-                    case 18: _18 = value; break;
-                    case 19: _19 = value; break;
-                    case 20: _20 = value; break;
-                    case 21: _21 = value; break;
-                    case 22: _22 = value; break;
-                    case 23: _23 = value; break;
-                    case 24: _24 = value; break;
-                    case 25: _25 = value; break;
-                    case 26: _26 = value; break;
-                    case 27: _27 = value; break;
-                    case 28: _28 = value; break;
-                    case 29: _29 = value; break;
-                    case 30: _30 = value; break;
-                    case 31: _31 = value; break;
                     default:
                         throw new ArgumentOutOfRangeException(nameof(index));
                 }
@@ -143,22 +95,6 @@ namespace Ews.Essentials.Data
             if (_13.Equals(item)) return 13;
             if (_14.Equals(item)) return 14;
             if (_15.Equals(item)) return 15;
-            if (_16.Equals(item)) return 16;
-            if (_17.Equals(item)) return 17;
-            if (_18.Equals(item)) return 18;
-            if (_19.Equals(item)) return 19;
-            if (_20.Equals(item)) return 20;
-            if (_21.Equals(item)) return 21;
-            if (_22.Equals(item)) return 22;
-            if (_23.Equals(item)) return 23;
-            if (_24.Equals(item)) return 24;
-            if (_25.Equals(item)) return 25;
-            if (_26.Equals(item)) return 26;
-            if (_27.Equals(item)) return 27;
-            if (_28.Equals(item)) return 28;
-            if (_29.Equals(item)) return 29;
-            if (_30.Equals(item)) return 30;
-            if (_31.Equals(item)) return 31;
             return -1;
         }
 

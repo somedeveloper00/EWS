@@ -5,7 +5,7 @@ namespace Ews.Essentials.Data
 {
     [System.Diagnostics.DebuggerDisplay("Count = {_count}")]
     [Serializable]
-    public struct FixedList128<T> : IFixedList<T> where T : unmanaged
+    public struct flist128<T> : IFixedList<T> where T : unmanaged
     {
         public int _count;
         public T _0;
