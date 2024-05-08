@@ -7,7 +7,7 @@ namespace Ews.Essentials.Data.FixedStrings
     [Serializable]
     public struct FixedString8 : IFixedString
     {
-        public FixedList8<char> buffer;
+        public flist8<char> buffer;
 
         public FixedString8(string str)
         {
@@ -43,7 +43,7 @@ namespace Ews.Essentials.Data.FixedStrings
     [Serializable]
     public struct FixedString32 : IFixedString
     {
-        public FixedList32<char> buffer;
+        public flist32<char> buffer;
 
         public FixedString32(string str)
         {
@@ -80,7 +80,7 @@ namespace Ews.Essentials.Data.FixedStrings
     [Serializable]
     public struct FixedString128 : IFixedString
     {
-        public FixedList128<char> buffer;
+        public flist128<char> buffer;
 
         public FixedString128(string str)
         {

@@ -19,6 +19,8 @@ namespace Ews.Essentials.Data
 
         public EwsDateTime(DateTime dt) => ticks = (long)(dt - DateTime.UnixEpoch).TotalSeconds;
 
+        public void Set(DateTime dateTime) => ticks = (long)(dateTime - DateTime.UnixEpoch).TotalSeconds;
+
         public readonly DateTime GetDateTime() => DateTime.UnixEpoch.AddSeconds(ticks);
 
         public static implicit operator EwsDateTime(long ticks) => new(ticks);
