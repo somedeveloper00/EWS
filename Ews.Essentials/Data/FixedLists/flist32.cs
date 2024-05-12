@@ -1,6 +1,7 @@
 using System;
 using System.Runtime.CompilerServices;
 using Unity.Collections.LowLevel.Unsafe;
+using UnityEngine;
 
 namespace Ews.Essentials.Data
 {
@@ -8,7 +9,7 @@ namespace Ews.Essentials.Data
     [Serializable]
     public struct flist32<T> : IFixedList<T> where T : unmanaged
     {
-        [field: UnityEngine.SerializeField]
+        [field: SerializeField]
         public int Count { get; set; }
         public T _0;
         public T _1;
@@ -43,13 +44,13 @@ namespace Ews.Essentials.Data
         public T _30;
         public T _31;
 
-        public readonly int Capacity => 4;
+        public readonly int Capacity => 32;
 
         public unsafe ref T this[int index]
         {
             get
             {
-                BoundsCheck(index);
+                CheckCapacity(index + 1);
                 fixed (void* ptr = &_0)
                 {
                     return ref UnsafeUtility.ArrayElementAsRef<T>(ptr, index);
@@ -69,14 +70,14 @@ namespace Ews.Essentials.Data
             return -1;
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [HideInCallstack, MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Add(T item)
         {
             CheckCapacity(Count + 1);
             this[Count++] = item;
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [HideInCallstack, MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Insert(int index, T item)
         {
             CheckCapacity(index);
@@ -84,7 +85,7 @@ namespace Ews.Essentials.Data
             Count = index == Count ? Count + 1 : Count;
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [HideInCallstack, MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void RemoveAt(int index)
         {
             for (int i = index + 1; i < Count; i++)
@@ -94,7 +95,7 @@ namespace Ews.Essentials.Data
             Count--;
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [HideInCallstack, MethodImpl(MethodImplOptions.AggressiveInlining)]
         public bool Remove(T item)
         {
             int index = IndexOf(item);
@@ -103,26 +104,17 @@ namespace Ews.Essentials.Data
             return true;
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [HideInCallstack, MethodImpl(MethodImplOptions.AggressiveInlining)]
         public void Clear()
         {
-            for (int i = 0; i < Capacity; i++)
+            for (int i = 0; i < Count; i++)
             {
                 this[i] = default;
             }
             Count = 0;
         }
 
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        private readonly void BoundsCheck(int index)
-        {
-            if (index < 0 || index >= Count)
-            {
-                throw new IndexOutOfRangeException(index.ToString());
-            }
-        }
-
-        [MethodImpl(MethodImplOptions.AggressiveInlining)]
+        [HideInCallstack, MethodImpl(MethodImplOptions.AggressiveInlining)]
         private readonly void CheckCapacity(int capacity)
         {
             if (capacity > Capacity)
