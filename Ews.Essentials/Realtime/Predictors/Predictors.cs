@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Runtime.CompilerServices;
 
 namespace Ews.Essentials.Realtime.Predictors
 {
@@ -8,6 +9,7 @@ namespace Ews.Essentials.Realtime.Predictors
     /// </summary>
     public readonly struct LinearPredictor : IDataPredictor
     {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public float CalculateDataForTime(IList<float> historyData, IList<DateTime> historyDates, DateTime dateTime)
         {
             if (historyData.Count < 2)
@@ -26,6 +28,7 @@ namespace Ews.Essentials.Realtime.Predictors
     /// </summary>
     public readonly struct AccelerationPredictor : IDataPredictor
     {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public float CalculateDataForTime(IList<float> historyData, IList<DateTime> historyDates, DateTime dateTime)
         {
             if (historyData.Count < 3)
@@ -47,6 +50,7 @@ namespace Ews.Essentials.Realtime.Predictors
     /// </summary>
     public readonly struct JerkPredictor : IDataPredictor
     {
+        [MethodImpl(MethodImplOptions.AggressiveInlining)]
         public float CalculateDataForTime(IList<float> historyData, IList<DateTime> historyDates, DateTime dateTime)
         {
             if (historyData.Count < 4)

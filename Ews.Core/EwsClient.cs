@@ -8,6 +8,9 @@ using Ews.Core.Interfaces;
 
 namespace Ews.Core
 {
+#if UNITY_WEBGL
+    [Obsolete("This class cannot be used in Webgl.")]
+#endif
     /// <summary>
     /// Represents a client for the EWS protocol.
     /// </summary>
@@ -189,12 +192,12 @@ namespace Ews.Core
         {
             if (!IsConnected())
             {
-                Error("client is not connected");
+                Error("sending data while client is not connected");
                 return;
             }
             if (eventId == 0x00)
             {
-                Error("cannot send message with event id 0x00");
+                Error("cannot send message with event id 0x00. that event id is reserved for event-less messages.");
                 return;
             }
 
@@ -240,16 +243,16 @@ namespace Ews.Core
 
                 if (buffers.SequenceEqual(EwsUtilities.SecretAccepted))
                 {
+                    // start loop
+                    _clientLoopCts?.Cancel();
+                    _clientLoopCts = new();
+                    StartCommunicationLoop(_clientLoopCts.Token);
+
                     // server has accepted connection
                     if (connectionEventsPreprocess is not null)
                         connectionEventsPreprocess.Connected(() => Connected?.Invoke());
                     else
                         Connected?.Invoke();
-
-                    // start loop
-                    _clientLoopCts?.Cancel();
-                    _clientLoopCts = new();
-                    StartCommunicationLoop(_clientLoopCts.Token);
                 }
                 else
                 {

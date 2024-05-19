@@ -12,6 +12,6 @@ namespace Ews.Essentials.Realtime
 
         public EwsRealtimeDate(DateTime dateTime) => ticks = dateTime.Ticks;
 
-        public DateTime ToDateTime() => new(ticks);
+        public readonly DateTime ToDateTime() => new(ticks);
     }
 }

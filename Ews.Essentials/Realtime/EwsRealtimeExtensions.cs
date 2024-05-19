@@ -1,42 +1,63 @@
 using System;
 using System.Threading;
-using System.Threading.Tasks;
 using Ews.Core;
 using Ews.Core.Extensions;
+using Ews.Core.Interfaces;
 
 namespace Ews.Essentials.Realtime
 {
     public static class EwsRealtimeExtensions
     {
-        public static async Task SendObjectOnIntervals<T>(this EwsClient client, byte eventId, TimeSpan intervals,
-            Func<T> getObject,
+        public unsafe static void SendTimedObjectOnIntervals<T>(this EwsClient client, ref T obj, TimeSpan intervals,
             CancellationToken cancellationToken)
-            where T : unmanaged
+            where T : unmanaged, ITransportingData
         {
-            while (!cancellationToken.IsCancellationRequested)
+            fixed (T* ptr = &obj)
             {
-                await Task.Delay(intervals, cancellationToken);
-                if (client.IsConnected())
-                    client.SendObject(eventId, getObject());
+                CreateContinousSendThread(client, obj.EventId, intervals, ptr, cancellationToken);
             }
         }
 
-        public static async Task SendTimedObjectOnIntervals<T>(this EwsClient client, byte eventId, TimeSpan intervals,
-            Func<T> getObject,
+        public unsafe static void SendTimedObjectOnIntervals<T>(this EwsClient client, byte eventId, TimeSpan intervals,
+            in T obj,
             CancellationToken cancellationToken)
             where T : unmanaged
         {
-            var sendingObject = new TimedObject<T>();
-            while (!cancellationToken.IsCancellationRequested)
+            fixed (T* ptr = &obj)
             {
-                await Task.Delay(intervals, cancellationToken);
-                if (client.IsConnected())
-                {
-                    sendingObject.date = new(DateTime.UtcNow);
-                    sendingObject.data = getObject();
-                    client.SendObject(eventId, sendingObject);
-                }
+                CreateContinousSendThread(client, eventId, intervals, ptr, cancellationToken);
             }
+        }
+
+        private static unsafe Thread CreateContinousSendThread<T>(EwsClient client, byte eventId, TimeSpan intervals, T* ptr, CancellationToken cancellationToken)
+            where T : unmanaged
+        {
+            return new Thread(() =>
+            {
+                try
+                {
+                    var sendingObject = new TimedObject<T>();
+                    while (true)
+                    {
+                        Thread.Sleep(intervals);
+                        if (cancellationToken.IsCancellationRequested)
+                        {
+                            break;
+                        }
+
+                        if (client.IsConnected())
+                        {
+                            sendingObject.date = new(DateTime.UtcNow);
+                            sendingObject.data = *ptr;
+                            client.SendObject(eventId, sendingObject);
+                        }
+                    }
+                }
+                catch (Exception e)
+                {
+                    UnityEngine.Debug.LogException(e);
+                }
+            }, sizeof(TimedObject<T>) + sizeof(DateTime) + sizeof(bool) * 2);
         }
     }
 }
