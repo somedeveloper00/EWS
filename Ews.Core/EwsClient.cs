@@ -32,6 +32,11 @@ namespace Ews.Core
         public TimeSpan keepAliveIntervals = TimeSpan.FromSeconds(2);
 
         /// <summary>
+        /// maximum number of tries to connect to the server.
+        /// </summary>
+        public int maxConnectRetries;
+
+        /// <summary>
         /// The underlying Socke<see cref="Socket"/>.
         /// </summary>
         private Socket _socket;
@@ -55,11 +60,6 @@ namespace Ews.Core
         /// The protocol that the client uses.
         /// </summary>
         private readonly ProtocolType _protocol;
-
-        /// <summary>
-        /// maximum number of tries to connect to the server.
-        /// </summary>
-        private readonly int _maxConnectRetries;
 
         /// <summary>
         /// Raised when an error occurs.
@@ -105,7 +105,7 @@ namespace Ews.Core
             _endpoint = socket.RemoteEndPoint as IPEndPoint;
             _protocol = socket.ProtocolType;
             _keepAlive = keepAlive;
-            _maxConnectRetries = maxConnectRetries;
+            this.maxConnectRetries = maxConnectRetries;
             _clientLoopCts = new();
             StartCommunicationLoop(_clientLoopCts.Token);
         }
@@ -120,7 +120,7 @@ namespace Ews.Core
             _protocol = protocol;
             _keepAlive = keepAlive;
             _endpoint = new IPEndPoint(IPAddress.Parse(host), port);
-            _maxConnectRetries = maxConnectRetries;
+            this.maxConnectRetries = maxConnectRetries;
         }
 
         /// <summary>
@@ -131,7 +131,7 @@ namespace Ews.Core
         {
             _connectCts?.Cancel();
             _connectCts = new();
-            await InternalConnectAsync(_maxConnectRetries);
+            await InternalConnectAsync(maxConnectRetries);
             return IsConnected();
         }
 
@@ -337,7 +337,14 @@ namespace Ews.Core
                         // 0 length data happens when the connection is lost
                         if (c == 0)
                         {
-                            Task.Run(() => ReconnectAsync(_maxConnectRetries), ct);
+                            if (maxConnectRetries > 0)
+                            {
+                                Task.Run(() => ReconnectAsync(maxConnectRetries), ct);
+                            }
+                            else
+                            {
+                                Thread.CurrentThread.Abort();
+                            }
                             break;
                         }
                         // received message in incorrect format
@@ -355,7 +362,7 @@ namespace Ews.Core
                         // 0 length data happens when the connection is lost
                         if (c == 0)
                         {
-                            Task.Run(() => ReconnectAsync(_maxConnectRetries), ct);
+                            Task.Run(() => ReconnectAsync(maxConnectRetries), ct);
                             break;
                         }
                         // received message in incorrect format
@@ -408,7 +415,7 @@ namespace Ews.Core
                     {
                         // connection is lost. try to reconnect
                         StopCommunicationLoop();
-                        ReconnectAsync(_maxConnectRetries).ConfigureAwait(false);
+                        ReconnectAsync(maxConnectRetries).ConfigureAwait(false);
                     }
                 }
             });
