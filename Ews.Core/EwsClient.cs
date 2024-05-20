@@ -188,7 +188,7 @@ namespace Ews.Core
         /// Sends the given message to the server. Use <see cref="IsConnected"/> to check if the 
         /// client is connected. (The message doesn't need to end with <see cref="EndOfMessageByte"/>!)
         /// </summary>
-        public void Send(byte eventId, byte[] message)
+        public void Send(byte eventId, Span<byte> message)
         {
             if (!IsConnected())
             {
@@ -204,7 +204,7 @@ namespace Ews.Core
             var data = new byte[sizeof(int) + 1 + message.Length];
             data[0] = eventId;
             BitConverter.GetBytes(message.Length).CopyTo(data, 1);
-            message.CopyTo(data, 1 + sizeof(int));
+            message.CopyTo(data.AsSpan(1 + sizeof(int)));
 
             _socket.SendAsync(data, SocketFlags.None, _clientLoopCts.Token);
         }
