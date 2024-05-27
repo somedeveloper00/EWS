@@ -1,3 +1,5 @@
+using System;
+
 namespace Ews.Essentials.Data
 {
     public interface IFixedList<T> where T : unmanaged
@@ -11,5 +13,6 @@ namespace Ews.Essentials.Data
         void RemoveAt(int index);
         bool Remove(T value);
         void Clear();
+        Span<T> AsSpan();
     }
 }

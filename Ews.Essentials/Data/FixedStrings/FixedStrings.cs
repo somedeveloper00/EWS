@@ -1,5 +1,6 @@
 using System;
 using System.Diagnostics;
+using UnityEngine;
 
 namespace Ews.Essentials.Data.FixedStrings
 {
@@ -11,14 +12,13 @@ namespace Ews.Essentials.Data.FixedStrings
 
         public FixedString8(string str)
         {
-            buffer = new()
-            {
-                Count = str.Length
-            };
-            for (int i = 0; i < str.Length; i++)
-            {
+#pragma warning disable IDE0017 // Simplify object initialization
+            buffer = new();
+            buffer.Count = Mathf.Min(Capacity - 1, str.Length);
+#pragma warning restore IDE0017 // Simplify object initialization
+
+            for (int i = 0; i < buffer.Count; i++)
                 buffer[i] = str[i];
-            }
         }
 
         public readonly char this[int index] => buffer[index];
@@ -27,16 +27,7 @@ namespace Ews.Essentials.Data.FixedStrings
 
         public static implicit operator string(FixedString8 value) => value.ToString();
         public static implicit operator FixedString8(string value) => new(value);
-
-        public override readonly string ToString()
-        {
-            var sb = new System.Text.StringBuilder();
-            for (int i = 0; i < buffer.Count; i++)
-            {
-                sb.Append(buffer[i]);
-            }
-            return sb.ToString();
-        }
+        public override readonly string ToString() => new(buffer.AsSpan());
     }
 
     [DebuggerDisplay("{" + nameof(ToString) + "(),nq}")]
@@ -47,15 +38,13 @@ namespace Ews.Essentials.Data.FixedStrings
 
         public FixedString32(string str)
         {
-            buffer = new()
-            {
-                Count = str.Length
-            };
+#pragma warning disable IDE0017 // Simplify object initialization
+            buffer = new();
+            buffer.Count = Mathf.Min(Capacity - 1, str.Length);
+#pragma warning restore IDE0017 // Simplify object initialization
 
-            for (int i = 0; i < str.Length; i++)
-            {
+            for (int i = 0; i < buffer.Count; i++)
                 buffer[i] = str[i];
-            }
         }
 
         public readonly char this[int index] => buffer[index];
@@ -64,16 +53,7 @@ namespace Ews.Essentials.Data.FixedStrings
 
         public static implicit operator string(FixedString32 value) => value.ToString();
         public static implicit operator FixedString32(string value) => new(value);
-
-        public override readonly string ToString()
-        {
-            var sb = new System.Text.StringBuilder();
-            for (int i = 0; i < buffer.Count; i++)
-            {
-                sb.Append(buffer[i]);
-            }
-            return sb.ToString();
-        }
+        public override readonly string ToString() => new(buffer.AsSpan());
     }
 
     [DebuggerDisplay("{" + nameof(ToString) + "(),nq}")]
@@ -84,15 +64,13 @@ namespace Ews.Essentials.Data.FixedStrings
 
         public FixedString128(string str)
         {
-            buffer = new()
-            {
-                Count = str.Length
-            };
+#pragma warning disable IDE0017 // Simplify object initialization
+            buffer = new();
+            buffer.Count = Mathf.Min(Capacity - 1, str.Length);
+#pragma warning restore IDE0017 // Simplify object initialization
 
-            for (int i = 0; i < str.Length; i++)
-            {
+            for (int i = 0; i < buffer.Count; i++)
                 buffer[i] = str[i];
-            }
         }
 
         public readonly char this[int index] => buffer[index];
@@ -101,15 +79,6 @@ namespace Ews.Essentials.Data.FixedStrings
 
         public static implicit operator string(FixedString128 value) => value.ToString();
         public static implicit operator FixedString128(string value) => new(value);
-
-        public override readonly string ToString()
-        {
-            var sb = new System.Text.StringBuilder();
-            for (int i = 0; i < buffer.Count; i++)
-            {
-                sb.Append(buffer[i]);
-            }
-            return sb.ToString();
-        }
+        public override readonly string ToString() => new(buffer.AsSpan());
     }
 }

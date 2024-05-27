@@ -115,6 +115,18 @@ namespace Ews.Essentials.Data
         }
 
         [HideInCallstack, MethodImpl(MethodImplOptions.AggressiveInlining)]
+        public Span<T> AsSpan()
+        {
+            unsafe
+            {
+                fixed (T* ptr = &_0)
+                {
+                    return new Span<T>(ptr, Count);
+                }
+            }
+        }
+
+        [HideInCallstack, MethodImpl(MethodImplOptions.AggressiveInlining)]
         private readonly void CheckCapacity(int capacity)
         {
             if (capacity > Capacity)
