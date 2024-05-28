@@ -2,16 +2,17 @@ using System;
 using Ews.Core;
 using Ews.Core.Interfaces;
 using Ews.Essentials.Data;
+using UnityEngine;
 
 namespace Ews.Essentials.Realtime
 {
     /// <summary>
     /// A realtime solution based on <see cref="EwsClient"/>.
     /// </summary>
-    public readonly struct EwsRealtime
+    public struct EwsRealtime
     {
-        public readonly EwsClient client;
-        private readonly flist8<Element> data;
+        public EwsClient client;
+        private flist8<Element> elements;
 
         public EwsRealtime(EwsClient client) : this()
         {
@@ -25,9 +26,9 @@ namespace Ews.Essentials.Realtime
         {
             if (client?.IsConnected() == true)
             {
-                for (int i = 0; i < data.Count; i++)
+                for (int i = 0; i < elements.Count; i++)
                 {
-                    data[i].Process(client, DateTime.UtcNow);
+                    elements[i].Process(client, DateTime.UtcNow);
                 }
             }
         }
@@ -39,7 +40,7 @@ namespace Ews.Essentials.Realtime
         {
             fixed (void* ptr = &data)
             {
-                this.data.Add(new(intervals, ptr, sizeof(T), data.EventId));
+                elements.Add(new(intervals, ptr, sizeof(T), data.EventId));
             }
         }
 
@@ -50,11 +51,11 @@ namespace Ews.Essentials.Realtime
         {
             fixed (void* ptr = &data)
             {
-                for (int i = 0; i < this.data.Count; i++)
+                for (int i = 0; i < this.elements.Count; i++)
                 {
-                    if (this.data[i].ptr == ptr)
+                    if (this.elements[i].ptr == ptr)
                     {
-                        this.data.RemoveAt(i);
+                        this.elements.RemoveAt(i);
                         return true;
                     }
                 }
