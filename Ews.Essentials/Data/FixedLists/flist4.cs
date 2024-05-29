@@ -120,6 +120,7 @@ namespace Ews.Essentials.Data
         {
             var flist = new flist4<T>();
             int count = span.Length > flist.Capacity ? flist.Capacity : span.Length;
+            flist.Count = count;
             for (int i = 0; i < count; i++)
                 flist[i] = span[i];
             return flist;
