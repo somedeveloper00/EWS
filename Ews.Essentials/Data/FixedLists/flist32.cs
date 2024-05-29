@@ -132,5 +132,25 @@ namespace Ews.Essentials.Data
             if (capacity > Capacity)
                 throw new IndexOutOfRangeException(capacity.ToString());
         }
+
+        public static implicit operator Span<T>(in flist32<T> flist)
+        {
+            unsafe
+            {
+                fixed (T* ptr = &flist._0)
+                {
+                    return new(ptr, flist.Count);
+                }
+            }
+        }
+
+        public static implicit operator flist32<T>(in Span<T> span)
+        {
+            var flist = new flist32<T>();
+            int count = span.Length > flist.Capacity ? flist.Capacity : span.Length;
+            for (int i = 0; i < count; i++)
+                flist[i] = span[i];
+            return flist;
+        }
     }
 }

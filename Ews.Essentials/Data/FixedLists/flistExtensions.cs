@@ -14,7 +14,7 @@ namespace Ews.Essentials.Data
     public static class FixedListExtensions
     {
         [HideInCallstack, MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static IEnumerator<T2> Select<T1, T2>(this IFixedList<T1> list, Func<T1, T2> predecate)
+        public static IEnumerable<T2> Select<T1, T2>(this IFixedList<T1> list, Func<T1, T2> predecate)
             where T1 : unmanaged
         {
             for (int i = 0; i < list.Count; i++)
@@ -24,7 +24,7 @@ namespace Ews.Essentials.Data
         }
 
         [HideInCallstack, MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public static IEnumerator<T> Where<T>(this IFixedList<T> list, Func<T, bool> condition)
+        public static IEnumerable<T> Where<T>(this IFixedList<T> list, Func<T, bool> condition)
             where T : unmanaged
         {
             for (int i = 0; i < list.Count; i++)
