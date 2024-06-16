@@ -2,6 +2,7 @@ using System;
 using System.Runtime.CompilerServices;
 using Unity.Collections.LowLevel.Unsafe;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 namespace Ews.Essentials.Data
 {
@@ -9,8 +10,8 @@ namespace Ews.Essentials.Data
     [Serializable]
     public struct flist128<T> : IFixedList<T> where T : unmanaged
     {
-        [field: SerializeField]
-        public int Count { get; set; }
+        [FormerlySerializedAs("<Count>k__BackingField")]
+        public int Count;
         public T _0;
         public T _1;
         public T _2;
@@ -141,6 +142,10 @@ namespace Ews.Essentials.Data
         public T _127;
 
         public readonly int Capacity => 128;
+
+        int IFixedList<T>.Count { readonly get => Count; set => Count = value; }
+
+        public unsafe ref T this[Index index] => ref index.IsFromEnd ? ref this[Count - 1 - index.Value] : ref this[index.Value];
 
         public unsafe ref T this[int index]
         {
