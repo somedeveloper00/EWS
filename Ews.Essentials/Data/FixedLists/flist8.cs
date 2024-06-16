@@ -25,7 +25,7 @@ namespace Ews.Essentials.Data
 
         int IFixedList<T>.Count { readonly get => Count; set => Count = value; }
 
-        public unsafe ref T this[Index index] => ref index.IsFromEnd ? ref this[Count - 1 - index.Value] : ref this[index.Value];
+        public unsafe ref T this[Index index] => ref index.IsFromEnd ? ref this[Count -  index.Value] : ref this[index.Value];
 
         public unsafe ref T this[int index]
         {

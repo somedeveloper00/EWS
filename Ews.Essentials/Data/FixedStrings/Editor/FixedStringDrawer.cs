@@ -11,7 +11,7 @@ namespace Ews.Essentials.Data.FixedStrings
         public override void OnGUI(Rect position, SerializedProperty property, GUIContent label)
         {
             var buffer = property.FindPropertyRelative("buffer");
-            var count = buffer.FindPropertyRelative("<Count>k__BackingField");
+            var count = buffer.FindPropertyRelative("Count");
 
             List<SerializedProperty> props = new();
             int index = 0;
