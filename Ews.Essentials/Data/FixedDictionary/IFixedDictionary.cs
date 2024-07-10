@@ -48,6 +48,6 @@ namespace Ews.Essentials.Data
         /// <summary>
         /// sets <paramref name="value"/> to the found entry's value if such key exists.
         /// </summary>
-        bool TryGetValue(TKey key, ref TVal value);
+        bool TryGetValue(TKey key, out TVal value);
     }
 }

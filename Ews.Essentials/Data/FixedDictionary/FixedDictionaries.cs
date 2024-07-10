@@ -64,11 +64,13 @@ namespace Ews.Essentials.Data
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool TryGetValue(TKey key, ref TVal value)
+        public bool TryGetValue(TKey key, out TVal value)
         {
             bool found = FindInternal(key, out var i, out var j);
             if (found)
-                value = ref bucket[i][j].value;
+                value = bucket[i][j].value;
+            else
+                value = default;
             return found;
         }
 
@@ -170,11 +172,13 @@ namespace Ews.Essentials.Data
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool TryGetValue(TKey key, ref TVal value)
+        public bool TryGetValue(TKey key, out TVal value)
         {
             bool found = FindInternal(key, out var i, out var j);
             if (found)
-                value = ref bucket[i][j].value;
+                value = bucket[i][j].value;
+            else
+                value = default;
             return found;
         }
 
@@ -276,11 +280,13 @@ namespace Ews.Essentials.Data
         }
 
         [MethodImpl(MethodImplOptions.AggressiveInlining)]
-        public bool TryGetValue(TKey key, ref TVal value)
+        public bool TryGetValue(TKey key, out TVal value)
         {
             bool found = FindInternal(key, out var i, out var j);
             if (found)
-                value = ref bucket[i][j].value;
+                value = bucket[i][j].value;
+            else
+                value = default;
             return found;
         }
 
